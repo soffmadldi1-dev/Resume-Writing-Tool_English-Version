@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume · Self-Introduction · Portfolio Prompt Maker (English) v3</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;padding:0;background:#FAFAF8;font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;word-break:keep-all;overflow-wrap:break-word}
+input,textarea,button,select{font-family:inherit}
+textarea{resize:vertical}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#AEAEB2;border-radius:3px}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#1D1D1F !important}
+.step-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.step-scroll::-webkit-scrollbar{display:none}
+.step-scroll{-ms-overflow-style:none;scrollbar-width:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useMemo, useCallback, useEffect } = React;
+
+const C = {
+  canvas:"#FAFAF8", panel:"#FFFFFF", ink:"#1D1D1F",
+  muted:"#6E6E73", faint:"#AEAEB2",
+  accent:"#0066CC", accentBg:"#E8F0FB",
+  border:"#E5E5EA", borderSoft:"#F0F0F2",
+  good:"#0A7A3B", goodBg:"#E8F5EE",
+  warn:"#B45309", warnBg:"#FEF3E7",
+  kakao:"#FEE500",
+};
+
+const KAKAO = "https://open.kakao.com/me/yosepAI";
+
+const STEPS = [
+  {id:1, label:"Job & Basic Info",        sub:"Where are you applying?",                    ico:"🎯"},
+  {id:2, label:"Education & Languages",   sub:"The backbone of your resume",                ico:"📖"},
+  {id:3, label:"Experience",              sub:"Several experiences, with numbers",          ico:"💼"},
+  {id:4, label:"Activities & Values",     sub:"Awards, strengths, motivation",              ico:"💛"},
+  {id:5, label:"Your Prompts",            sub:"Resume → Self-intro → Portfolio → Final → Korean", ico:"✨"},
+];
+
+const JOBS = [
+  {id:"hotel",  label:"Hotel"},
+  {id:"air",    label:"Airline"},
+  {id:"travel", label:"Travel Agency"},
+  {id:"mice",   label:"MICE & Events"},
+  {id:"casino", label:"Casino & Integrated Resort"},
+  {id:"food",   label:"Food Service & F&B"},
+  {id:"public", label:"Public & Tourism Organizations"},
+  {id:"custom", label:"Other (type it)"},
+];
+
+const OTHER = "Other";
+
+const JOB_SUBS = {
+  hotel:  ["Front Desk","Rooms & Housekeeping","F&B & Banquet","Concierge","Sales & Marketing","Reservations","Back Office (HR·Accounting)",OTHER],
+  air:    ["Cabin Crew","Airport Ground Staff (Passenger)","Reservations & Ticketing","Ground Operations Support","Lounge & VIP Service",OTHER],
+  travel: ["Tour Product Planning","Tour Operator (OP)","Inbound Tour Coordinator","Travel Counter & Consulting","Tour Conductor / Guide","Air & Hotel Reservations","Overseas Sales & Partnerships",OTHER],
+  mice:   ["Event Planning & Operation (PCO)","Exhibitions & Conventions","Registration & Protocol","Corporate Meetings & Incentives","Catering & F&B",OTHER],
+  casino: ["Dealer","Customer Service & Floor","VIP Marketing (Host)","Resort Services","Facility & Operations Support",OTHER],
+  food:   ["Floor Service & Management","Kitchen & Culinary","Store Management","Menu & Product Planning","Franchise Supervisor (SV)",OTHER],
+  public: ["Tourism Planning & Administration","Project Operation & Management","PR & Marketing","Visitor & Customer Support","Research & Surveys",OTHER],
+  custom: [],
+};
+
+// Input examples per job (placeholders) — written for international students in Korea
+const EX = {
+  hotel: {
+    role:"e.g., Front Desk Agent (new graduate)",
+    org:"e.g., XX Hotel Seoul — Rooms Division Intern",
+    duty:"e.g., Front desk — about 80 check-ins a day / Guest guidance — 30% Chinese-speaking guests / First response to complaints — about 10 a month",
+    numbers:"e.g., 6 months / about 80 check-ins a day / 5 guest compliment cards",
+    situation:"e.g., On busy weekends, the check-in line filled the lobby and many guests were unhappy.",
+    action:"e.g., I guided guests to mobile pre-check-in first, and I planned nearby sightseeing routes in Chinese for guests from China.",
+    result:"e.g., The line became much shorter, and my name appeared on guest feedback cards several times.",
+    motivation:"e.g., The front desk creates both the first and the last impression of a trip. I want to be that impression for guests from my country.",
+    diff:"e.g., I speak Vietnamese, English and Korean, and I have worked both as a restaurant server and as a hotel intern in Korea.",
+    value:"e.g., However busy it is, I make eye contact with every guest.",
+    aspire:"e.g., First I will learn the front desk well. Within 3 years, I want to help improve the service manual for foreign guests.",
+  },
+  air: {
+    role:"e.g., Cabin Crew (new graduate)",
+    org:"e.g., XX Airlines Intern / In-flight service part-time job",
+    duty:"e.g., Boarding guidance — 200 seats per flight / In-flight service support — 40 flights a month / Passenger care — delays and special-needs passengers",
+    numbers:"e.g., 1 year / about 200 passengers per flight / 2 compliments from the purser",
+    situation:"e.g., Bad weather delayed departure by 1 hour, and passengers were tired and upset.",
+    action:"e.g., I explained the situation first, and offered drinks and blankets before passengers asked.",
+    result:"e.g., Complaints were resolved on board, and the purser praised my service attitude.",
+    motivation:"e.g., I am good at making people feel safe in a short time and in a small space.",
+    diff:"e.g., I studied in two countries and have served passengers from many cultures.",
+    value:"e.g., I keep safety rules strictly while making passengers feel comfortable.",
+    aspire:"e.g., I want to build international flight experience and become a crew member who is strong with passengers from many cultures.",
+  },
+  travel: {
+    role:"e.g., Inbound Tour Coordinator / Tour Product Planning (new graduate)",
+    org:"e.g., XX Travel — Inbound Team Intern",
+    duty:"e.g., Product research — 5 items a week / Itinerary writing — 8 a month / Booking data clean-up — 0 errors",
+    numbers:"e.g., 3 months / wrote 5 itineraries, 2 were adopted",
+    situation:"e.g., Our Korea tour products were designed for older travelers, so few young travelers from my country asked about them.",
+    action:"e.g., I connected popular SNS spots into one route and made a new itinerary for travelers in their 20s.",
+    result:"e.g., Inquiries for the product increased, and my itinerary was used in a real product.",
+    motivation:"e.g., I want to design trips to Korea from start to finish for travelers from my home country.",
+    diff:"e.g., I have recorded my own trips around Korea on a blog, so I can plan from the traveler's point of view.",
+    value:"e.g., An easy route that guests can really follow matters more than a flashy schedule.",
+    aspire:"e.g., I want to read customer data and plan tailored products for each market.",
+  },
+  mice: {
+    role:"e.g., MICE / Event Operation (new graduate)",
+    org:"e.g., International conference & expo operation staff",
+    duty:"e.g., Registration desk — 300 participants / Name badges — 3 events / Visitor flow — managed 6 staff",
+    numbers:"e.g., 3 events / managed registration for 300 participants",
+    situation:"e.g., Right before the opening, the registration line grew so long that the event might start late.",
+    action:"e.g., I made a checklist that split badge printing and guidance, and rearranged the desk.",
+    result:"e.g., Registration finished on time, and the organizer hired me again for the next event.",
+    motivation:"e.g., I enjoy designing, from behind the scenes, events where hundreds of people move smoothly.",
+    diff:"e.g., I have managed participant lists and seating in Excel, and I can support foreign delegates in 3 languages.",
+    value:"e.g., The more variables a site has, the more I prepare with a checklist.",
+    aspire:"e.g., I want to become a PM who runs an international event from start to finish.",
+  },
+  casino: {
+    role:"e.g., Casino Dealer / Integrated Resort Service (new graduate)",
+    org:"e.g., XX Integrated Resort — Guest Service part-time job",
+    duty:"e.g., VIP lounge service — 30 groups a day / Facility guidance — 50% foreign guests / Compliance-based service — 12 months with no incidents",
+    numbers:"e.g., 1 year / including night shifts / about XX guests a day",
+    situation:"e.g., A guest strongly complained when I could not accept a request that was against the rules.",
+    action:"e.g., I offered an alternative within the rules and reported quickly to my manager, following the procedure.",
+    result:"e.g., The guest left without a formal complaint, and I was recognized for both compliance and kindness.",
+    motivation:"e.g., I like giving guests a special experience within clear rules.",
+    diff:"e.g., I kept focus and friendliness during night and shift work, and I serve guests in Chinese and Japanese.",
+    value:"e.g., I never give up either rule compliance or guest satisfaction.",
+    aspire:"e.g., I want to experience various resort service roles and grow into a professional dealer.",
+  },
+  food: {
+    role:"e.g., Restaurant Floor Service / Management (new graduate)",
+    org:"e.g., Family restaurant — floor server",
+    duty:"e.g., Floor service — 60 tables a day / Closing settlement — 5 times a week, 0 errors / First response to complaints — 8 a month",
+    numbers:"e.g., 1 year / about 60 tables a day / closing settlement with 0 errors",
+    situation:"e.g., On weekends, waiting was long, table turnover was slow and complaints were frequent.",
+    action:"e.g., I re-divided table zones and wrote a simple manual for seating and setting order.",
+    result:"e.g., Peak-time waiting clearly dropped, and the manager gave me closing responsibility.",
+    motivation:"e.g., I feel rewarded when food and space make someone's day better.",
+    diff:"e.g., I have worked both on the floor and in the kitchen, so I see the guest and the operation at the same time.",
+    value:"e.g., The busier it gets, the more I keep the basics of hygiene and service.",
+    aspire:"e.g., I want to grow into a store manager responsible for operations and sales.",
+  },
+  public: {
+    role:"e.g., Tourism organization — foreign-language staff / administration (new graduate)",
+    org:"e.g., City tourism supporters for foreigners / Tourism idea contest",
+    duty:"e.g., Research — 3 reports / Survey — 120 responses / Route planning — 3 proposals",
+    numbers:"e.g., 120 survey responses / 3 routes proposed / 1 contest award",
+    situation:"e.g., There were few tourism contents for young foreign visitors in the region.",
+    action:"e.g., I first researched demand with a survey of international students, then proposed routes for them.",
+    result:"e.g., We won an award, and part of the proposed route was used in regional promotion.",
+    motivation:"e.g., I want to help grow tourism at the level of a region and an industry, not only one customer.",
+    diff:"e.g., I build proposals on surveys and research, and I understand foreign visitors' needs firsthand.",
+    value:"e.g., I persuade with data and evidence, not with feelings.",
+    aspire:"e.g., I want to analyze foreign-visitor data and help reflect it in tourism programs.",
+  },
+  custom: {
+    role:"e.g., Write the job you want to apply for",
+    org:"e.g., Write the company, organization or activity name",
+    duty:"e.g., Main task — details (XX hours / XX people / XX% / XX points)",
+    numbers:"e.g., Period, frequency, number of people, etc. (leave blank if none)",
+    situation:"e.g., Write the situation or background of that work.",
+    action:"e.g., Write what you did, and how, at that time.",
+    result:"e.g., Write what changed because of your action.",
+    motivation:"e.g., Write your real reason for wanting this job.",
+    diff:"e.g., Write one thing that makes you different from similar applicants.",
+    value:"e.g., Write what matters most to you at work.",
+    aspire:"e.g., Write what you want to do after joining.",
+  },
+};
+
+const OTHER_TYPE = "Other (type it)";
+const EXP_TYPES = ["Full-time / Contract job","Internship","Part-time job","Freelance / Teaching","Club / Student council","Contest / Project","Volunteer / External activity",OTHER_TYPE];
+
+const STRENGTH_GROUPS = [
+  {g:"Guest & Service",         items:["Guest service","Friendliness","Empathy & listening","Warm hospitality","Complaint handling","Customer mindset"]},
+  {g:"Communication & Culture", items:["Multilingual communication","Cross-cultural understanding","Coordination","Persuasion & negotiation","Teamwork","Leadership"]},
+  {g:"Getting Things Done",     items:["Accuracy & detail","Responsibility","Quick response","Crisis management","Execution","Multitasking"]},
+  {g:"Planning & Analysis",     items:["Planning","Problem solving","Research & analysis","Creative ideas","Data & Excel","Writing manuals"]},
+  {g:"Attitude & Growth",       items:["Stamina & diligence","Perseverance","Fast learner","Adaptability","Goal achievement","SNS & content"]},
+];
+
+function newExp(){
+  return {type:"", typeCustom:"", org:"", period:"", title:"", duty:"", numbers:"", link:""};
+}
+
+const INIT = {
+  // STEP 1
+  jobCategory:"", jobSub:"", jobCustom:"", role:"",
+  name:"", nameKo:"", nationality:"", visa:"",
+  birth:"", phone:"", email:"", address:"", homepage:"", oneWord:"",
+  // STEP 2
+  education:"", certifications:"", koreanLevel:"", languages:"", tools:"",
+  // STEP 3
+  expList:[newExp()],
+  starIndex:0, starSituation:"", starAction:"", starResult:"",
+  // STEP 4
+  actTeach:"", actAward:"", actContent:"", actEtc:"",
+  expStrengths:[], appealPoint:"",
+  motivation:"", differentiator:"", workValue:"", aspiration:"",
+  // Target company (optional)
+  targetCompany:"", targetPosting:"", targetTalent:"",
+};
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setMobile(window.innerWidth < 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return mobile;
+}
+
+function jobLabel(d) {
+  if(d.jobCategory==="custom") return d.jobCustom || "Tourism industry (job not entered)";
+  var j = JOBS.find(function(x){return x.id===d.jobCategory;});
+  if(!j) return "Tourism industry (not selected)";
+  var sub = (d.jobSub && d.jobSub!==OTHER) ? (" — " + d.jobSub) : "";
+  return j.label + sub;
+}
+function exFor(d) { return EX[d.jobCategory] || EX.custom; }
+
+// ─────────────────────────── Profile format ───────────────────────────
+function fmtLines(txt, prefix){
+  var out = [];
+  String(txt||"").split("\n").forEach(function(line){ if(line.trim()) out.push((prefix||"- ") + line.trim()); });
+  return out;
+}
+
+function fmtProfile(d) {
+  var L = [];
+  L.push("■ Basic information");
+  L.push("- Name (as in passport): " + (d.name||"(not entered)"));
+  if(d.nameKo) L.push("- Name in Korean (Hangul): " + d.nameKo);
+  if(d.nationality) L.push("- Nationality: " + d.nationality);
+  if(d.visa) L.push("- Visa status: " + d.visa);
+  L.push("- Target field: Tourism industry / " + jobLabel(d) + (d.role?(" ("+d.role+")"):""));
+  if(d.birth) L.push("- Date of birth: " + d.birth);
+  if(d.phone) L.push("- Phone: " + d.phone);
+  if(d.email) L.push("- Email: " + d.email);
+  if(d.address) L.push("- City of residence: " + d.address);
+  if(d.homepage) L.push("- Website / SNS: " + d.homepage);
+  if(d.oneWord) L.push("- Me in one word: " + d.oneWord);
+  L.push("");
+  L.push("■ Education (one line = one school)");
+  var edu = fmtLines(d.education);
+  if(edu.length) L = L.concat(edu); else L.push("- (not entered)");
+  L.push("");
+  L.push("■ Certifications · Languages · Tools");
+  var cert = fmtLines(d.certifications);
+  if(cert.length) L = L.concat(cert);
+  if(d.koreanLevel) L.push("- Korean proficiency: " + d.koreanLevel);
+  if(d.languages) L.push("- Other languages (incl. native language): " + d.languages);
+  if(d.tools) L.push("- Tools: " + d.tools);
+  if(!cert.length && !d.koreanLevel && !d.languages && !d.tools) L.push("- (not entered)");
+  L.push("");
+  L.push("■ Work & other experience (several — material for the resume's Experience section)");
+  var star = d.starIndex;
+  d.expList.forEach(function(e, i){
+    var has = e.org||e.duty||e.numbers;
+    if(!has) return;
+    L.push("[Experience " + (i+1) + "]" + (i===star?" ★ KEY EXPERIENCE":""));
+    var ty = (e.type===OTHER_TYPE) ? (e.typeCustom || "") : e.type;
+    if(ty)       L.push("- Type: " + ty);
+    if(e.org)    L.push("- Company / organization / activity: " + e.org);
+    if(e.period) L.push("- Period: " + e.period);
+    if(e.title)  L.push("- Position / role: " + e.title);
+    if(e.duty)   L.push("- Main tasks (what I did): " + e.duty);
+    if(e.numbers)L.push("- Numbers (results / scale): " + e.numbers);
+    if(e.link)   L.push("- Link to the target job (my own view): " + e.link);
+    L.push("");
+  });
+  L.push("■ Key experience in depth (core episode for the self-introduction)");
+  var se = d.expList[star] || {};
+  if(se.org) L.push("- Experience: " + se.org + (se.period?(" ("+se.period+")"):""));
+  if(d.starSituation) L.push("- [Situation / background] " + d.starSituation);
+  if(d.starAction)    L.push("- [Action — what I did and how] " + d.starAction);
+  if(d.starResult)    L.push("- [Result — before → after] " + d.starResult);
+  L.push("");
+  L.push("■ Other activities (material for the resume's 'Other Activities' section)");
+  var a1 = fmtLines(d.actTeach,   "- [Training · presentations · programs] ");
+  var a2 = fmtLines(d.actAward,   "- [Awards · evaluations · recognition] ");
+  var a3 = fmtLines(d.actContent, "- [Writing · content · SNS] ");
+  var a4 = fmtLines(d.actEtc,     "- [Volunteering · groups · routines, etc.] ");
+  var acts = a1.concat(a2, a3, a4);
+  if(acts.length) L = L.concat(acts); else L.push("- (none)");
+  L.push("");
+  L.push("■ Strengths · values · motivation");
+  if(d.expStrengths && d.expStrengths.length) L.push("- Strength keywords: " + d.expStrengths.join(", "));
+  if(d.appealPoint) L.push("- My unique appeal point: " + d.appealPoint);
+  if(d.motivation) L.push("- Motivation: " + d.motivation);
+  if(d.differentiator) L.push("- What makes me different: " + d.differentiator);
+  if(d.workValue) L.push("- My work principle: " + d.workValue);
+  if(d.aspiration) L.push("- Goal after joining: " + d.aspiration);
+  return L.join("\n");
+}
+
+/* ── Target company (optional — if entered, all prompts switch to company-tailored mode) ── */
+function hasTarget(d){
+  return !!((d.targetCompany||"").trim() || (d.targetPosting||"").trim() || (d.targetTalent||"").trim());
+}
+function fmtTarget(d){
+  if(!hasTarget(d)) return "";
+  var L = ["[Target company information — entered by the applicant]"];
+  if((d.targetCompany||"").trim()) L.push("■ Company : " + d.targetCompany.trim());
+  if((d.targetPosting||"").trim()) L.push("■ Job posting (duties · requirements · preferred qualifications, etc.)\n" + d.targetPosting.trim());
+  if((d.targetTalent||"").trim())  L.push("■ Ideal candidate · core values · company information\n" + d.targetTalent.trim());
+  return L.join("\n") + "\n\n";
+}
+var TARGET_GUARD = ""
+  + "· Use only what is written in [Target company information] as facts about the company. Do not invent revenue, recent news or business status that was not entered (if truly needed, mark it '(to be checked)').\n"
+  + "· Do not copy and list phrases from the posting or the ideal-candidate statement. Put the keywords inside sentences that PROVE them with the applicant's experience and numbers.\n"
+  + "· No flattering or promotional sentences about the company ('the industry's No.1 ...', 'world-class ...').\n";
+
+/* ── Writing rules shared by prompts ①–④ : international applicant + translation-ready English ── */
+var EN_STYLE = ""
+  + "# Language rules — international applicant, translation-ready English\n"
+  + "· The applicant is an international student in Korea. English may not be their first language, so [Profile] may contain simple English, mixed languages or typos. Understand the meaning, but never add facts that are not there.\n"
+  + "· Write clear, professional, plain English (about CEFR B2 level): short sentences, one message per sentence, active voice. No idioms, slang, sports metaphors or culture-specific jokes.\n"
+  + "  (Reason: this document will later be translated into Korean. Plain English becomes natural Korean; idioms become awkward Korean.)\n"
+  + "· Write every number as digits with a unit (80 guests a day, 6 months, 30%). Write dates as YYYY.MM (2024.03 – 2025.02).\n"
+  + "· Use one fixed English name for each school, company, certificate and job title, and never change it within the conversation. If the applicant wrote an official Korean name, keep it in the profile so it can be used in the Korean version.\n"
+  + "· Korean proficiency (TOPIK, KIIP, etc.) and the applicant's native language are real job assets in Korean tourism. Show them clearly, but only as entered — never raise a level or invent a score.\n"
+  + "· Write visa status only if it is in [Profile], exactly as entered. Do not guess or comment on visa eligibility.\n\n";
+
+/* ── Radar chart spec (hard-coded coordinates = no AI calculation errors) ──
+   Strength-based : axes differ per applicant, scores only 4 / 4.5 / 5 */
+var RADAR_SPEC = ""
+  + "[Radar chart spec — 'Strength Map'. Do NOT recalculate coordinates; copy the values below exactly]\n"
+  + "· Canvas : <svg viewBox=\"-70 0 440 300\" width=\"286\" height=\"195\" xmlns=\"http://www.w3.org/2000/svg\"> · center (150,150) · 5 points = radius 110 (the left/right margin is reserved so English labels are not cut off — do not change it)\n"
+  + "· Axes : from 12 o'clock, clockwise ①–⑥ = the '6 strength axes' decided earlier (not fixed axes). Place related strengths next to each other.\n"
+  + "· Grid coordinates (1 point → 5 points) — use only to draw the 5 grid rings\n"
+  + "  ① 12 o'clock : 150,128 | 150,106 | 150,84 | 150,62 | 150,40\n"
+  + "  ② 2 o'clock  : 169.05,139 | 188.11,128 | 207.16,117 | 226.21,106 | 245.26,95\n"
+  + "  ③ 4 o'clock  : 169.05,161 | 188.11,172 | 207.16,183 | 226.21,194 | 245.26,205\n"
+  + "  ④ 6 o'clock  : 150,172 | 150,194 | 150,216 | 150,238 | 150,260\n"
+  + "  ⑤ 8 o'clock  : 130.95,161 | 111.89,172 | 92.84,183 | 73.79,194 | 54.74,205\n"
+  + "  ⑥ 10 o'clock : 130.95,139 | 111.89,128 | 92.84,117 | 73.79,106 | 54.74,95\n"
+  + "· Data coordinates — scores are only 4 / 4.5 / 5\n"
+  + "  4    : ①150,62 ②226.21,106 ③226.21,194 ④150,238 ⑤73.79,194 ⑥73.79,106\n"
+  + "  4.5  : ①150,51 ②235.74,100.5 ③235.74,199.5 ④150,249 ⑤64.26,199.5 ⑥64.26,100.5\n"
+  + "  5    : ①150,40 ②245.26,95 ③245.26,205 ④150,260 ⑤54.74,205 ⑥54.74,95\n"
+  + "· Drawing order\n"
+  + "  1) 5 grid rings — <polygon fill=\"none\"> joining the 6 coordinates of the same score in order ①→⑥. Rings 1–4 stroke=\"#e5e5e5\" stroke-width=\"1\", ring 5 stroke=\"#cacacb\" stroke-width=\"1.2\"\n"
+  + "  2) 6 axis lines — <line> from center (150,150) → the 5-point coordinate of each axis, stroke=\"#cacacb\" stroke-width=\"1\"\n"
+  + "  3) Data polygon — join each axis's score coordinate in order ①→⑥ : <polygon fill=\"#111111\" fill-opacity=\"0.12\" stroke=\"#111111\" stroke-width=\"2\">\n"
+  + "  4) Vertices — 5 points: <circle r=\"4\" fill=\"#111111\">, 4 / 4.5 points: <circle r=\"3.5\" fill=\"#ffffff\" stroke=\"#111111\" stroke-width=\"1.5\">\n"
+  + "  5) Labels — 'strength name + score' as one piece (e.g., Guest Care 5). font-size=\"11\", fill=\"#111111\"\n"
+  + "     ① x=150 y=27 text-anchor=middle · ② x=254 y=88 start · ③ x=254 y=218 start · ④ x=150 y=281 middle · ⑤ x=46 y=218 end · ⑥ x=46 y=88 end\n"
+  + "     Strength names: 1–2 words, 12 characters or fewer (e.g., Guest Care, Multilingual, Operations).\n"
+  + "· Scores MUST match the strength table (bar list).\n"
+  + "· Colors: black (#111111), grays (#cacacb, #e5e5e5) and white only. No red or other colors — this chart shows strengths only.\n";
+
+/* ── File name rule ── */
+var FILE_NAME_RULE = ""
+  + "[File name rule — apply to EVERY file you create]\n"
+  + "· Use only lowercase English letters, numbers, hyphens (-) and underscores (_). No spaces, brackets, Korean or other special characters.\n"
+  + "  (Non-English file names often break in browsers, email and cloud drives, and the file may not open at all.)\n"
+  + "· Use the applicant's name as in the passport, in lowercase with hyphens. Example : NGUYEN Van An → nguyen-van-an. If unsure, use applicant.\n"
+  + "· Recommended file names (YYMMDD = today's date)\n"
+  + "   - Final document HTML : (name)_application_YYMMDD.html   e.g., nguyen-van-an_application_260812.html\n"
+  + "   - Word : (name)_application_YYMMDD.docx / PDF : (name)_application_YYMMDD.pdf\n"
+  + "   - Portfolio preview HTML (③) : (name)_portfolio_YYMMDD.html\n"
+  + "   - Korean version (⑤) : (name)_application_ko_YYMMDD.html\n"
+  + "   - Photos (only when saved outside the HTML) : photo-id.jpg / photo-01.jpg, photo-02.jpg …\n"
+  + "   - Radar chart : radar-chart.svg\n"
+  + "· When you hand over a file, state the file name once in a sentence and add one line : 'Keep this English file name when you save it — non-English file names sometimes do not open.'\n";
+
+/* ── Shared by ③ and ④ : P3 portfolio visual spec (v7) ── */
+var P3_VIZ_SPEC = ""
+  + "· Common : colors are black #111111 · grays (#707072 secondary text, #cacacb borders, #e5e5e5 light lines, #f5f5f5 evidence background) · white only. No second accent color. Font: Pretendard. Apply word-break:keep-all and overflow-wrap:break-word to all text (this also keeps the later Korean version clean).\n"
+  + "· Cover : left — eyebrow 'PORTFOLIO' → name (small) → key message (large title, max 3 lines) / right — square profile photo 120px, rounded corners (14px). Below: black divider + gray-background callout (black vertical line on the left).\n"
+  + "· 01 Number boxes : 4-column grid, 1px black border, 12px corners, centered. Number 30px bold + small unit, category name in gray below. On mobile 2×2.\n"
+  + "· 01 Asset blocks : white card (light border, 12px corners) containing 'category name + count' → chip row (wraps automatically) → one line 'On the job : …' ('On the job' in bold).\n"
+  + "   Chip = pill shape (border-radius 999px), gray border, white background, bold text. Only the ★ signature-asset chip is black background with white text. Tool chips show 'Tool | level' with the level in small gray text.\n"
+  + "· 02 : table + bars (black fill on gray track) + radar SVG centered.\n"
+  + "· 03 : table with ●●● marks. On mobile, each row becomes a card (label: value) stacked vertically.\n"
+  + "· 04 : 2×2 photo grid (1 column on mobile), captions as 'bold title — description'.\n"
+  + "· 05 Roadmap : 3 cards side by side with a '›' arrow between cards (on mobile, stacked vertically with a '⌄' arrow).\n"
+  + "   Card = white background, gray border, 14px corners. Top: black pill badge 'D+30' + stage name in gray on the right → key phrase (16–17px bold) → action (body) → evidence box (#f5f5f5 background, outlined 'Evidence' badge, aligned to the bottom of the card) → under a light line, black 'Output' badge + bold text.\n"
+  + "   Only the last card (D+90) has a thick black border (the destination). One bold summary line under the cards.\n"
+  + "· Check : no horizontal scroll on PC (≈1180px) or mobile (≈390px), no text overflowing chips or cards, no orphan single word on the last line of titles.\n";
+
+// ─────────────────────────── 5 prompts ───────────────────────────
+function buildPrompts(d) {
+  var P = fmtProfile(d);
+  var name = d.name || "the applicant";
+  var job = jobLabel(d) + (d.role?(" / "+d.role):"");
+  var hasT = hasTarget(d);
+  var TB = fmtTarget(d);
+  var co = (d.targetCompany||"").trim();
+  var coName = co || "the target company";
+
+  // ── Prompt 1 : Resume draft (7-section free-format resume, Korean hiring style) ──
+  var p1 = "# Role\n"
+    + "You are a resume consultant who has screened and edited resumes for Korea's tourism industry (hotels, airlines, travel agencies, MICE, casinos, food service, public organizations) for 14 years, including many resumes of international students. Your job is to turn a resume that only 'lists periods and titles' into one where 'numbers and the link to the job are visible'.\n\n"
+    + "# Goal\n"
+    + "Using the [Profile] below, write the full text of every section of a free-format resume for '" + job + "'. The structure follows Korean hiring practice, so the result can later be translated into Korean and submitted to Korean employers. Write it in English.\n\n"
+    + "[Profile]\n" + P + "\n\n" + TB
+    + EN_STYLE
+    + "# Process (keep this order)\n"
+    + "STEP 1. Spec analysis table — break down EVERY item in the [Profile]'s experience section into the table below.\n"
+    + "  | Experience (organization · role) | Recorded value (counted numbers) | Competency shown | Relevance to '" + job + "' (High/Mid/Low) |\n"
+    + "  · 'Recorded value' means counting what was already done. If a period and frequency are given, calculate the total count (months × 4.3 × times per week), total hours or total people yourself (show the formula and write 'about ~').\n"
+    + "STEP 2. Experience section — sort by job relevance and mark the most important one with ★. Each experience uses this 3-line structure.\n"
+    + "  (1) Organization · position/role — one-line summary of duties (period)\n"
+    + "  (2) 2–3 result bullets — conclusion first, with numbers, starting with a past-tense action verb (Handled / Achieved / Expanded). No plain duty lines like 'Responsible for sales' → write results like 'Served about 100 guests a day; completed 180 cash settlements in 6 months with 0 errors'.\n"
+    + "  (3) → one line on what strength this experience gives for '" + job + "' (this line is the heart of a free-format resume. Use the [Profile]'s 'Link to the target job' first, but make it sharper).\n"
+    + "STEP 3. Resume top set (3 parts)\n"
+    + "  · Headline (1 sentence) — one sentence that covers the whole resume. Include 1 key number + job keywords (density like: \"Trilingual hotel intern who handled 80 check-ins a day for guests from 20+ countries\").\n"
+    + "  · Core competencies (3 lines) — ① field of expertise (job keyword + experience) ② key achievement (strongest number) ③ unique strength (one combination others do not have). About 8–12 words each.\n"
+    + "  · Self-introduction (about 70–90 words) — a short intro that expands the headline. Flow: 'with this experience → I will do this in this job'. At least 2 numbers, no flowery words.\n"
+    + "STEP 4. Remaining sections\n"
+    + "  · Education — newest first. If the major connects to the job, add '— (one connecting line)'. Try to connect even an unrelated major as a strength. Korean language programs (language institute, Korean course) are valid education lines.\n"
+    + "  · If years, issuing organizations or dates for education/certifications are missing, do NOT invent them — write '(fill in)'.\n"
+    + "  · Certifications & Languages — sort by job relevance. Put Korean proficiency (TOPIK / KIIP level) first, then the native language, then other languages. Add '— (what this means on the job)' to 1–2 certifications or languages that directly connect to the job. If no official score exists, write it honestly, e.g., 'Korean: daily conversation (no official score yet)'.\n"
+    + "  · Other activities — group the [Profile]'s other activities into [Training · presentations] [Awards · evaluations] [Writing · content] [Other]. If there are numbers (times, people, period), always use them.\n"
+    + "STEP 5. 🔎 Number follow-up questions — up to 3 places where numbers are missing or weak. Do not invent numbers; give a counting method the applicant can do themselves (period × times per week × people per time).\n\n"
+    + (hasT ? ("# Company-tailored rules — [Target company information] exists, so apply these\n"
+      + "1. Before STEP 1, extract 6–8 key keywords from the posting and ideal-candidate statement, grouped as [Duties / Requirements / Preferred / Ideal candidate], and judge 'relevance' in the spec analysis table by these keywords.\n"
+      + "2. Put at least 2 posting keywords into the headline and the 3 core-competency lines, together with the applicant's evidence (numbers, experience).\n"
+      + "3. Sort experiences and place ★ by closeness to the posting's duties. Move certifications/experience that match preferred qualifications forward and add one line '— matches a preferred qualification'.\n"
+      + TARGET_GUARD + "\n") : "")
+    + "# Common rules\n"
+    + "1. No empty adjectives or adverbs (hardworking, passionately, actively) — replace them all with numbers, actions and results.\n"
+    + "2. Never invent facts or numbers that are not in [Profile]. For estimates, write 'about ~' with the calculation.\n"
+    + "3. Each bullet 15 words or fewer. A resume is not read; it is scanned.\n"
+    + "4. Do not delete experiences with low relevance — lower their priority and move them to 'Other activities'.\n"
+    + "5. Do not use a Western one-page CV style that hides the structure. Keep the section order below so it matches the Korean resume template 1:1.\n\n"
+    + "# Output format (exactly in this order — 1:1 with the resume template sections)\n"
+    + "(0) STEP 1 spec analysis table → (1) Headline → (2) Basic information (name, name in Korean if entered, nationality, visa status if entered, date of birth, phone, email, city; mark empty items as 'fill in on the template') → (3) 3 core-competency lines → (4) Self-introduction (70–90 words) → (5) Education → (6) Experience incl. ★ → (7) Certifications & Languages → (8) Other activities → (9) 🔎 Number follow-up questions"
+    + (hasT ? " → (10) Posting keyword map — | Keyword | Source (Duties/Requirements/Preferred/Ideal candidate) | Where it appears in the resume | Evidence |; mark keywords you could not reflect as 'not enough evidence' and connect them to the STEP 5 number questions" : "");
+
+  // ── Prompt 2 : Self-introduction (Korean-style 4 questions, material allocation) ──
+  var p2 = "# Role\n"
+    + "You are an expert who has edited self-introductions (Korean 'jagisogaeseo') for Korea's tourism industry for 14 years and has evaluated hundreds of them as a document screener. Your job is to turn an ordinary applicant into 'the one person the interviewer must meet'.\n\n"
+    + "# Goal\n"
+    + "Based on the [Resume draft] we wrote above and the [Profile] below, write a self-introduction for '" + job + "'. The four questions must each tell 'a different story' and together form one clear person — 'a text only this applicant could write'.\n"
+    + "Important: this is a Korean-style self-introduction with 4 separate questions, NOT a Western cover letter. Do not use letter format ('Dear Hiring Manager', 'Sincerely').\n\n"
+    + "[Profile]\n" + P + "\n\n" + TB
+    + EN_STYLE
+    + "# Process (keep this order. First organize STEP 0–1 as a table/memo, then write the text)\n"
+    + "STEP 0. Material allocation table — the most important step (it blocks overlap between questions)\n"
+    + "  · Extract and list ALL materials in [Profile]: the several experiences, numbers, strengths, certifications/languages, activities and values.\n"
+    + "  · Assign each material to ONLY ONE of the 4 questions below as its 'main' place (1 material = 1 main question).\n"
+    + "  · As a table: | Material | Main question | Angle used in that question |\n"
+    + "  · Core rule: do not use the same experience or the same number as 'main' material in two or more questions. If you must mention it again, use a completely different angle in 1 sentence or less.\n"
+    + "  · The '★ KEY EXPERIENCE' (with in-depth notes) MUST be the main material of ② Key Experience.\n"
+    + "STEP 1. Differentiation point in 1 sentence — define this applicant's 'decisive strength' (an experience or combination others cannot easily have). No common words (diligent, responsible). Use it as the axis running through all 4 questions.\n"
+    + "STEP 2. Write drafts of the 4 questions according to the allocation table.\n"
+    + "STEP 3. Self-score with the [Checklist] → revise once where needed → present the 'final version'.\n\n"
+    + "# Role of each question — keep 'what it covers / what it does NOT cover'\n"
+    + "① Motivation (120–150 words)\n"
+    + "   · Covers: why this job + where it meets my direction + what I want to do by joining (future-oriented). For an international applicant, connect 'me – Korea – this job' naturally in 1–2 sentences (e.g., serving guests from my home region, being a bridge between cultures). Not a life story.\n"
+    + "   · Does NOT cover: long experience stories. The scene that triggered the motivation: exactly 1 sentence.\n"
+    + "② Key Experience & Competency (150–180 words)\n"
+    + "   · Covers: ONLY the ★ KEY EXPERIENCE, in depth, in the flow situation → action → result. Focus on the specific actions I took and the results that changed (numbers).\n"
+    + "   · Does NOT cover: motivation or goals again. Do not show the labels 'Situation/Task/Action/Result'.\n"
+    + "③ Job Fit & My Strengths (120–150 words)\n"
+    + "   · Covers: assets OTHER than the experience in ② (other experiences, certifications, Korean level, languages, tools, activities), connected 1:1 to the competencies this job requires.\n"
+    + "   · Does NOT cover: the key experience from ② again. Overlap = failed differentiation.\n"
+    + "④ Goals After Joining (90–120 words)\n"
+    + "   · Covers: concrete actions and a roadmap — 'what and how' right after joining → 1 year → 3 years.\n"
+    + "   · Does NOT cover: looking back at the past. No empty promises ('I will do my best', 'I will become a talented person').\n\n"
+    + (hasT ? ("# Company-tailored rules — [Target company information] exists, so apply these\n"
+      + "1. ① Motivation covers 'why this job' AND 'why " + coName + "'. Choose 1 point from the ideal candidate, vision or business in [Target company information] that really touches the applicant's experience, and connect it.\n"
+      + "2. Choose 2–3 ideal-candidate keywords and prove each in a different question with a different experience. Add a column 'Ideal-candidate keyword proved' to the STEP 0 table.\n"
+      + "3. ③ Job Fit maps 1:1 to the posting's requirements and preferred qualifications; ④ Goals is an action plan based on the posting's duties.\n"
+      + "4. Use the company name (" + coName + ") instead of 'your company'.\n"
+      + TARGET_GUARD + "\n") : "")
+    + "# Common rules\n"
+    + "1. Start each question with a short impact subtitle (about 5–9 words) that makes people want to read (e.g., \"The intern who cleared a crowded lobby in 5 minutes\"). No clichés.\n"
+    + "2. Every question is conclusion-first. The first sentence after the subtitle states the conclusion. Do not start with greetings or flowery words.\n"
+    + "3. Quote at least 1 real number or case from [Profile] in each question, but — following the allocation table — use DIFFERENT numbers/cases in each question. Never invent facts or numbers that are not in [Profile].\n"
+    + "4. Banned expressions: hardworking · passionate · responsible person · good communication skills · I will do my best · I will become a ~ talent · since I was young · your esteemed company → replace abstract words with scenes, actions and numbers.\n"
+    + "5. Because this is a tourism/service job, naturally include the angle 'how did I change the guest's experience?'.\n"
+    + "6. Short sentences, active voice, one message per sentence. Avoid starting every sentence with 'I'.\n\n"
+    + "# Checklist (STEP 3)\n"
+    + "- [ ] Is the same experience, number or sentence used as 'main' material in two or more questions?\n"
+    + "- [ ] ① motivation & future / ② depth of experience / ③ other evidence / ④ actions after joining — do the 4 questions tell different stories?\n"
+    + "- [ ] Would this text still make sense if another applicant used it? → If yes, differentiation failed; make it more specific.\n"
+    + "- [ ] Can the key point be understood by reading only the first sentence of each question?\n"
+    + "- [ ] Are there zero banned expressions, and does each question have specific numbers or scenes?\n"
+    + "- [ ] Is it plain English with no idioms, so it can be translated into natural Korean later?\n\n"
+    + "# Output format\n"
+    + "(1) STEP 0 material allocation table → (2) STEP 1 differentiation point in 1 sentence → (3) Final version of the 4 questions (each starts with [Subtitle] and ends with '(XX words)') → (4) 3 questions the interviewer is likely to dig into + answer direction."
+    + (hasT ? " → (5) Ideal-candidate link table — | Ideal-candidate keyword | Question that proves it | Evidence sentence |" : "");
+
+  // ── Prompt 3 : Job portfolio v7 (submission draft + 🔒 insight report + HTML preview) ──
+  var p3 = "# Role\n"
+    + "You are a recruiter who has handled hiring in Korea's tourism industry for 15 years and a job-portfolio director. If the resume and self-introduction are 'words', the portfolio is 'evidence'. You build an evidence document that makes a recruiter decide within 30 seconds: 'this person is already prepared'.\n"
+    + "\n"
+    + "# Goal\n"
+    + "Using the [Resume draft] and [Self-introduction] we wrote above and the [Profile] below, build a job portfolio for '" + job + "'. There are two outputs.\n"
+    + "  A. Submission portfolio draft — one single draft that becomes a page when pasted into Notion, and where 1 section = 1 PPT slide. It is the source of P3 in the ④ final document. (When ④ builds it in HTML, follow the [④ Final document P3 visual spec] at the very bottom.)\n"
+    + "  B. 🔒 Applicant-only insight report — a diagnosis and strategy memo for the applicant only. It is NOT submitted.\n"
+    + "\n"
+    + "[Profile]\n" + P + "\n\n" + TB
+    + EN_STYLE
+    + "# Design principles\n"
+    + "1. An 'evidence' document that does not repeat the resume — do not list the resume's key numbers again. Numbers appear only as 'evidence' inside each section.\n"
+    + "2. Strength-based — draft A contains only strengths with evidence. Weak points and improvements do NOT go into A; send them only to report B.\n"
+    + "3. Put evidence (experience, number, certification, output) next to every claim. Delete adjectives without evidence.\n"
+    + "4. Translate into job language — rewrite certifications, tools and activities not as 'I have it' but as 'so I can do THIS on the job'.\n"
+    + "5. Never invent facts, numbers or years that are not in [Profile] or the conversation above. Empty information = '(fill in)'. Adding plausible numbers to evidence sentences ('0 errors', '95% satisfaction') is also invention.\n"
+    + "6. A visual document — do not list sentences; show structure with 'number boxes · chips (tags) · step cards'. Short sentences, one message per cell.\n"
+    + "\n"
+    + (hasT ? ("# Company-tailored rules — [Target company information] exists, so apply these\n"
+      + "1. Take the required competencies in 03 Job Fit from the posting (duties, requirements, preferred qualifications) in [Target company information], and write the posting's wording as-is in the requirement column. If there is no posting and only an ideal-candidate statement, use the ideal candidate + Korea's NCS (National Competency Standards) job description.\n"
+      + "2. For the key message and the 02 strength axes, prefer strengths that overlap with the ideal candidate.\n"
+      + "3. Keep the skeleton (order of reproducing results) of the 05 90-day roadmap, but write each card's action and output as 'what I will actually do at that company', based on the posting's duties.\n"
+      + "4. Add '8. Posting & ideal-candidate match' to report B — ① one line of posting coverage (meets X of Y requirements · matches X of Y preferred qualifications) ② table | Ideal-candidate keyword | My evidence | Episode to tell in the interview |.\n"
+      + TARGET_GUARD + "\n") : "")
+    + "# Process\n"
+    + "STEP 0. Organize materials (short, as tables)\n"
+    + "  · Key message in 1 line — the one sentence this portfolio will prove. It points to the same person as the resume headline and the self-introduction's differentiation point, but write a new sentence.\n"
+    + "  · Strength-axis candidate table — | Competency candidate (8–10) | Evidence (experience · number · certification) | Job relevance (High/Mid) | Adopted? |\n"
+    + "  · Result-reproduction order — from [Key experience in depth], extract the process that actually produced the result in 3 stages (e.g., understand the situation → expand participation → handle the evaluation). This becomes the skeleton of the 05 roadmap.\n"
+    + "STEP 1. Write the submission draft following [A. Draft structure] below.\n"
+    + "STEP 2. Build the radar chart SVG.\n"
+    + "STEP 3. Write [B. Insight report].\n"
+    + "STEP 4. (If you can create files) Make an HTML preview file of draft A.\n"
+    + "\n"
+    + "# A. Submission portfolio draft structure (exactly this order and format)\n"
+    + "Use only basic Notion blocks (heading, callout, table, divider, inline code) and put a --- divider between sections. At most 1 emoji, only in front of a section title.\n"
+    + "\n"
+    + "# (Name) | (Key message — one sentence containing the target job and core strength)\n"
+    + "> One-line self-definition — what kind of person, with what experience, doing what, in about 8–12 words (callout)\n"
+    + "> 📷 [Profile photo here] — if there is no photo, write exactly 'Please attach a profile photo' (square photo recommended)\n"
+    + "\n"
+    + "## 01 My Assets — My Tools at a Glance\n"
+    + "① 4 number boxes — as a 1-row, 4-column table. Top row = number + unit, bottom row = category.\n"
+    + "   | 3 | 2 | 4 | 2 |\n"
+    + "   | Languages | Certifications | Digital tools | Awards |\n"
+    + "   - Only what really exists; the 4 categories most relevant to the job. If there are fewer than 4, show what exists (minimum 2).\n"
+    + "   - Each count MUST equal the number of chips in ② below (1 chip = 1). The same certification with a different subject/level counts separately; count tools one by one (e.g., 'Excel·Canva' = 2).\n"
+    + "② Asset block per category — 3 lines per category.\n"
+    + "   **[Category] (count)**\n"
+    + "   `★ Signature asset` `Asset` `Asset` `Tool · level` …   ← 1 asset = 1 inline-code chip\n"
+    + "   → On the job : one line with action verbs from '" + job + "' work scenes (covering the whole category).\n"
+    + "   - Categories: only those that really exist among [Languages & Global] [Certifications & Licenses] [Digital & AI Tools] [Training & Programs] [Awards & Activities]. Most job-relevant first.\n"
+    + "   - Chips show the short name only (dates and issuers are already in the resume). Languages include the level in the chip (e.g., `TOPIK Level 4`, `Vietnamese · Native`, `TOEIC 850`).\n"
+    + "   - Tool level in 3 steps only, inside the chip : Expert (teaches it or many outputs) / Proficient (uses it at work all the time) / Basic (basic use). No percentages or stars.\n"
+    + "   - Put ★ in front of only ONE 'signature asset', the one most directly linked to the job (it becomes a black chip in ④).\n"
+    + "   - If there are few certifications, fill with completed training, programs and project outputs (only if true).\n"
+    + "③ One line under the blocks : ★ Signature asset · Tool level : Expert > Proficient > Basic\n"
+    + "\n"
+    + "## 02 Strength Profile — 6 Evidence-Based Strengths\n"
+    + "· The 6 axes are NOT fixed. From the STEP 0 candidate table, choose the 6 with 'clear evidence and high job relevance'. Do not include a weak competency with a low score — remove it from the axes.\n"
+    + "· Axis names: job language, 1–2 words, 12 characters or fewer (e.g., Guest Care · Operations · Front Office · Multilingual · Data Skills · Teamwork).\n"
+    + "· Scoring — use only 4 / 4.5 / 5.\n"
+    + "   5 = has both a quantitative result (number) AND repeated/long-term experience\n"
+    + "   4.5 = has either a clear quantitative result OR long-term experience\n"
+    + "   4 = has clear related experience or certification\n"
+    + "   2–4 axes at 5 points, at least 1 axis at 4–4.5 (if all are 5, the chart becomes a perfect hexagon and the shape of the strengths disappears).\n"
+    + "· Table : | Strength | Score | Level | 1-line evidence (experience · number) |  Level as a bar (5 █████ / 4.5 ████▌ / 4 ████░).\n"
+    + "· One line under the table — **Average X.X / 5 · Sharpest strength : XX**\n"
+    + "· Under it, write '[Radar chart here — insert radar-chart.svg]' + caption '※ Self-assessment based on experience and results (5-point scale)'\n"
+    + "\n"
+    + "## 03 Job Fit — What This Job Requires ↔ What I Have Already Done\n"
+    + (hasT
+      ? "· Source of requirements : take 5 from the posting/ideal candidate in [Target company information] above (company-tailored rule 1).\n"
+      : "· Source of requirements : if a job posting is attached in [Job posting] at the very end of this prompt, take them from its duties, requirements and preferred qualifications; if not, take 5 from Korea's NCS job description for '" + job + "' and the common requirements of typical job postings.\n")
+    + "· Table : | Job requirement (in the posting's words) | My evidence (experience · number · certification) | Fit |\n"
+    + "   - Fit : ●●● Ready now (has done the same work) / ●●○ Strong (transferable from similar experience)\n"
+    + "   - Draft A contains only 4–5 rows of ●●● and ●●○. Rows with weak evidence (●○○) do NOT go into the draft — send them to report B.\n"
+    + "· One line under the table — **Job fit : ready now for X of 5 requirements**\n"
+    + "\n"
+    + "## 04 Field Records — Evidence in Photos\n"
+    + "· 2–4 photo cells (2×2 grid). 2 lines per cell.\n"
+    + "  📷 [Photo needed — Suggested : (specific scene or material. e.g., guiding guests at the front desk / during event operation / screenshot of an output / certificate or award)]\n"
+    + "  Caption : **Bold title, 2–5 words** — what it proves in 1 line + a number (e.g., **Guiding guests in 3 languages** — one scene from 6 months at the front desk)\n"
+    + "· Suggest photos only for scenes from [Profile] experiences/activities that are likely to have been photographed. For experiences unlikely to have photos, suggest 'output screenshot or certificate' instead.\n"
+    + "\n"
+    + "## 05 90-Day Contribution Roadmap After Joining\n"
+    + "· Not a table — a 3-stage flow. In Notion use a 3-column layout (or 3 callouts linked with ↓); in PPT use 3 cards + arrows.\n"
+    + "· Skeleton = the STEP 0 'result-reproduction order'. Build it so the applicant re-runs, within 90 days after joining, the order in which they already produced a result once. Do not use the generic pattern (learn the work → suggest improvements → report results).\n"
+    + "· 5 lines per stage card, in exactly this format.\n"
+    + "   **D+30** · (stage name — 2 words, e.g., Learn · Align)\n"
+    + "   ### (key phrase — noun phrase of 2–5 words, e.g., Front Desk Status Board)\n"
+    + "   Action : 1 sentence starting with a verb (about 12–15 words). You do not know the company's internal situation, so use a realistic order like 'understand → expand → prove'.\n"
+    + "   `Evidence` (what I have already done + how) → (real result number)   ← only what really exists in 01–03 and [Profile]\n"
+    + "   `Output` up to 2 visible outputs (e.g., 1 status board · operation manual v1)\n"
+    + "   Same format for D+60 and D+90. The 3 cards use different experiences and numbers as evidence.\n"
+    + "· One-line summary under the cards (bold) : In the same order that produced (key result) — (stage 1) → (stage 2) → (stage 3) — I will reproduce it within 90 days\n"
+    + "· Do not overlap sentences or topics with self-introduction ④ Goals After Joining (1–3-year vision). 05 covers only 'action units within 90 days'.\n"
+    + "· No empty promises ('I will do my best', 'I will become a ~ talent'). Do not make a card without evidence.\n"
+    + "\n"
+    + "# Radar chart SVG (STEP 2)\n"
+    + RADAR_SPEC
+    + "· So labels do not break in Notion or PPT, set font-family=\"Arial,'Segoe UI',sans-serif\" font-weight=\"700\".\n"
+    + "· If you can create files (e.g., Claude), create the file 'radar-chart.svg' directly. The file name must be in English.\n"
+    + "· If you cannot create files, show the full SVG in one code block and add this guide exactly:\n"
+    + "   ① Copy all the code → paste into Notepad ② Save as radar-chart.svg with 'Encoding: UTF-8' ③ Notion: /image, PPT: Insert → Picture\n"
+    + "   (If the image looks broken, open radar-chart.svg in Chrome, take a screenshot and paste it.)\n"
+    + "\n"
+    + "# Draft A HTML preview (STEP 4)\n"
+    + "· If you can create files (e.g., Claude), make one HTML file that renders draft A following the [④ Final document P3 visual spec] at the bottom. File name in English: (name)_portfolio_YYMMDD.html (e.g., nguyen-van-an_portfolio_260812.html).\n"
+    + "· Include only the cover and draft A sections 01–05. Do NOT include STEP 0 materials or the B 🔒 insight report in the HTML.\n"
+    + "· Put the radar chart directly in the HTML as SVG. Photo spots are light-gray (#f5f5f5) boxes with a 1px dotted border (#cacacb) and the text 'Attach photo — (suggested scene)'.\n"
+    + "· Write styles directly in <style>. The only external file allowed is the Pretendard web font : @font-face{font-family:\"Pretendard\";src:url(\"https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/woff2/PretendardVariable.woff2\") format(\"woff2-variations\");font-weight:45 920;font-display:swap;}\n"
+    + "· If you cannot create files, skip this step and write one line: 'It will be completed as HTML in the ④ final document step.'\n"
+    + "· If the applicant uploads photos to this chat, put them in the photo spots as base64 and rebuild the file with the same name, even without being asked.\n"
+    + "\n"
+    + "# B. 🔒 Applicant-only insight report — do NOT put this in the submission\n"
+    + "Start with one line: 'From here on, this is a memo for you only — not for submission.'\n"
+    + "1. Full job-fit diagnosis — all 5 requirements from 03 (including ●○○) as a table. | Requirement | Fit | Reason | First sentence if asked about it in the interview (about 8 words, conclusion first) |\n"
+    + "   One-line comment under the table : current competitiveness for this job and the 1 card to push hardest.\n"
+    + "2. 1–2 weakest links → improvement plan : | Weak point | Action possible within 2 weeks (specific certificate, course or output name) | First sentence if asked in the interview |\n"
+    + "   (For international applicants, Korean proficiency is often the first question. If Korean is a weak link, give a concrete plan, e.g., the next TOPIK test or a Korean interview practice routine — do not state exam dates unless you have verified them.)\n"
+    + "3. Consistency check of the 3 documents — put the resume headline / self-introduction differentiation point / portfolio key message side by side and check ① do they point to the same person? ② do any numbers or years conflict (including whether the 01 number boxes match the resume's certification and tool lists)? ③ is any sentence repeated in all 3 documents? ④ does the 05 roadmap overlap with self-introduction ④ Goals? → only the places to fix, as a table | Document | Now | Change to |. If nothing needs fixing, one line: 'Consistency OK'.\n"
+    + "4. 3 questions an interviewer who saw this portfolio will ask — question + answer skeleton (1-sentence conclusion → evidence asset → link to the job). 1 of them from the 05 roadmap.\n"
+    + "5. 1-minute self-introduction script — in the portfolio's flow (key message → ★ signature asset → sharpest strength → 3 stages of the 90-day roadmap), spoken style, about 130–150 words. Keep the sentences short so it can be translated into Korean for a Korean interview.\n"
+    + "6. 📷 Photo & material checklist — □ 1 profile photo (square, taken within the last 6 months, plain background) □ suggested scene for each 04 field-record cell □ portrait consent if other people's faces are visible □ alternative materials if there are no photos. End with one line: 'Upload your photos to this chat and I will put them in the photo spots of the ④ final document.'\n"
+    + "7. How to use (3 lines) — ① Notion : paste draft A and use /image at [Radar chart here] and [Photo here]; place 05 cards with /3 columns ② PPT : cover + sections 01–05 = 6 slides (05 = 3 cards + arrows) ③ When the posting changes : paste the new posting and ask 'Rewrite only 03 Job Fit and the 05 90-day roadmap for this posting'.\n"
+    + "\n"
+    + "# Output order\n"
+    + "(1) STEP 0 materials → (2) A submission portfolio draft → (3) Radar chart SVG (radar-chart.svg) → (4) B 🔒 insight report → (5) Draft A HTML preview file (if you can create files)\n"
+    + "\n"
+    + "# Self-check before output\n"
+    + "- [ ] Is there no section that simply lists the resume's key numbers again?\n"
+    + "- [ ] Do the 01 number-box counts = the chip counts? Is there exactly 1 ★?\n"
+    + "- [ ] Are all 6 strength axes 4–5 points, and do the table scores match the chart scores? Are 2–4 axes at 5?\n"
+    + "- [ ] Does draft A contain no weak points, improvements or '(needs improvement)'? (All sent to B?)\n"
+    + "- [ ] Is every piece of evidence in the 03 table and 05 cards a real fact from [Profile] or the conversation above? No added numbers?\n"
+    + "- [ ] Does 05 reproduce the applicant's real result order instead of a generic pattern? Does it not overlap with self-introduction ④?\n"
+    + "- [ ] Did you suggest a specific scene for each photo spot?\n"
+    + "- [ ] (If you made HTML) Is no STEP 0 or report B content in the HTML? Is there no horizontal scroll at PC and mobile widths?\n"
+    + (hasT ? "- [ ] Are the 03 requirements in the posting's exact words, and do strengths overlapping the ideal candidate show in 02 and the key message?\n" : "")
+    + "\n"
+    + "# ④ Final document P3 visual spec — render P3 by this spec when ④ builds HTML\n"
+    + P3_VIZ_SPEC
+    + (hasT
+      ? ""
+      : "\n[Job posting (optional)] — paste the original posting (duties, requirements, preferred qualifications) under this line to calculate 03 Job Fit against the posting. Leave it empty if you have none.\n");
+
+  // ── Prompt 4 : Final submission document (integrated A4) ──
+  var p4 = "# Role\n"
+    + "You are the editor and document designer who created " + name + "'s resume draft, self-introduction and job portfolio in this conversation. You are responsible not only for merging the content but also for typesetting and formatting.\n\n"
+    + "# Goal\n"
+    + "Merge the ① resume ② self-introduction ③ portfolio (draft A) from the conversation above into one finished A4 print document that can be submitted without any further changes.\n"
+    + "P1 Resume / P2 Self-introduction / P3 Job portfolio — P1 and P2 are 1 A4 page each, P3 is 2 A4 pages (① cover · 01 My Assets · 02 strength table ② '(continued)' radar chart · 03 · 04 · 05). Target job: '" + job + "'.\n"
+    + "A text-only answer is NOT complete. It is complete only when you also create the print-ready HTML file that applies [PART B Design system] · [PART E Photo spots] · [PART F P3 visual spec] exactly.\n"
+    + "This English document will later be translated into Korean with prompt ⑤ by replacing only the text. So build it 'translation-ready' (PART G).\n\n"
+
+    + "# PART A. Content structure\n"
+    + "[P1 Resume — free format, exactly this order and these items]\n"
+    + "  0. Headline — one sentence that covers the whole resume (top of the document, largest text). Photo spot on the right of the header (PART E)\n"
+    + "  1. Basic information — name · name in Korean (only if entered) · nationality · visa status (only if entered) · date of birth · phone · email · city (if empty, '(fill in)')\n"
+    + "  2. 3 core-competency lines — field of expertise / key achievement / unique strength (3 cards side by side)\n"
+    + "  3. Self-introduction (about 70–90 words)\n"
+    + "  4. Education — newest first; if the major connects to the job, '— connecting line'\n"
+    + "  5. Experience ★ most important — for each experience, one row 'organization · role / period' + 2–3 result bullets + one line '→ link to the job'. ★ on the most important one\n"
+    + "  6. Certifications & Languages — Korean proficiency first, then native language, other languages, certifications; unknown years/issuers '(fill in)'\n"
+    + "  7. Other activities — grouped into [Training · presentations] [Awards · evaluations] [Writing · content] [Other]\n"
+    + "[P2 Self-introduction]\n"
+    + "  4 questions. For each: ① small gray question label (Q1 Motivation …) ② [Subtitle] ③ body ④ '(XX words)' at the bottom right.\n"
+    + "[P3 Job portfolio — copy ③'s 'draft A' as-is. Do NOT put a single line of the 🔒 insight report (B) in it]\n"
+    + "  · Cover : eyebrow 'PORTFOLIO' → name (small) → key message (large title, max 3 lines) / profile photo on the right (PART E) → black divider → one-line self-definition callout\n"
+    + "  · 01 My Assets — 4 number boxes → asset block per category (category + count / chip row / 'On the job' line) → one line '★ Signature asset · Tool level : Expert > Proficient > Basic'\n"
+    + "  · 02 Strength Profile — strength table (score + bar + 1-line evidence) + radar chart (PART C) + one line 'average · sharpest strength'\n"
+    + "  · 03 Job Fit — table of requirement ↔ my evidence ↔ fit (●●●/●●○), 4–5 rows + one line 'ready now for X of 5 requirements'\n"
+    + "  · 04 Field Records — 2×2 photo grid + captions ('bold title — description') (PART E)\n"
+    + "  · 05 90-Day Contribution Roadmap — 3 cards D+30 › D+60 › D+90 + one bold summary line under the cards\n"
+    + "  · Page split : page 1 = cover · 01 · 02 strength table / page 2 = eyebrow 'PORTFOLIO (continued)' → radar chart → 03 → 04 → 05. Footer on both pages : '3 / 3'.\n"
+    + "  · If it overflows, cut in this order : 04 photos 4 → 2 cells → 03 rows 5 → 4 → shorten 02 evidence sentences. Do not cut 01 My Assets or the 05 roadmap.\n\n"
+
+    + (hasT ? ("# Company-tailored — based on [Target company information] in the conversation above\n"
+      + "· This document is for " + coName + ". Check that posting/ideal-candidate keywords are alive, with evidence, in the P1 headline, P2 motivation, P3 key message and 03 Job Fit. If missing, refine only within the facts already confirmed in the conversation above.\n"
+      + "· Left side of the footer : 'Name · Application to " + coName + "'.\n"
+      + TARGET_GUARD + "\n") : "")
+    + "# Content rules\n"
+    + "1. Never add new facts or numbers different from what was confirmed in the conversation above. Missing information = '(fill in)'.\n"
+    + "2. Bullet style, conclusion first. No exaggeration or flowery words. Plain English with no idioms (it will be translated into Korean).\n"
+    + "3. Check that the target job ('" + job + "') is visible in the headline and core competencies; if missing, refine.\n"
+    + "4. Fit each page (.page) into one A4 sheet (if it overflows, shorten evidence sentences; if there is empty space, add one evidence line). If P1 truly overflows, allow at most 1 extra page 'RESUME (continued)'.\n\n"
+
+    + "# PART B. Design system — do not change these specs\n"
+    + "Direction : black-and-white editorial design like a sports-brand manual. 95% black and neutral grays, no decoration, separation only with white space and 1px lines.\n"
+    + "[Colors] ink #111111 / white background #ffffff / light gray surface #f5f5f5 / body gray #39393b / secondary #707072 / faint text #9e9ea0 / line #cacacb / light line #e5e5e5\n"
+    + "  · Do not add any color other than these neutrals. No red, blue, green or gradients.\n"
+    + "[Font] One Pretendard variable font for the whole document (it covers both English and Korean, so the Korean version keeps the same look). Weights: font-weight 400 (body) / 700 (Bold) / 800 (ExtraBold).\n"
+    + "  @font-face{font-family:\"Pretendard\";src:url(\"https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/woff2/PretendardVariable.woff2\") format(\"woff2-variations\");font-weight:45 920;font-display:swap;}\n"
+    + "  body{font-family:\"Pretendard\",-apple-system,\"Segoe UI\",\"Malgun Gothic\",sans-serif;}\n"
+    + "[Page] .page = width:210mm; min-height:297mm; padding:18mm 16mm 16mm; background:#fff; margin:0 auto 24px. body background #f5f5f5. 1 page = 1 <section class=\"page\"> (P1 1 page · P2 1 page · P3 2 pages).\n"
+    + "[Screen width] @media (max-width:820px){ .page{width:100%; min-height:auto; padding:24px 18px;} } — no horizontal scroll even on a phone. A4 fixed when printing.\n"
+    + "[Typography]\n"
+    + "  · Document eyebrow : 11px, Bold, letter-spacing 1.2px, color #707072, uppercase (e.g., RESUME)\n"
+    + "  · Document title : 38px, ExtraBold, line-height 1.15, letter-spacing -0.5px\n"
+    + "  · Headline sentence under the title : 14.5px, line-height 1.65, color #39393b, only key words in black Bold\n"
+    + "  · Close the header with a 2px black horizontal line under the title block\n"
+    + "  · Section title : 16px ExtraBold + number 01 · 02 on the left (14px, #707072) + 1px #cacacb line below\n"
+    + "  · Body : 13px, line-height 1.7 / self-introduction body 13px, line-height 1.85, color #39393b\n"
+    + "[Shapes] P1 and P2 corner radius 0. Only chips and badges are 9999px pills. No shadows or emoji (except the dashed photo spots). Separate only with 1px lines. For P3, the card / number-box / rounded-corner rules in [PART F] take priority over this item.\n"
+    + "[Components]\n"
+    + "  · Bullets : no list-style; a 4px black square dot on the left (::before)\n"
+    + "  · 3 core-competency cards : background #f5f5f5, flex 1 row in 3 equal parts, label 11px #707072 + value 13px Bold\n"
+    + "  · Chips : 1px #cacacb border pill + 12px Bold. Highlight chip = background #111111 with white text.\n"
+    + "  · P3 components (number boxes, asset blocks, strength table, fit table, photo grid, roadmap cards) follow [PART F].\n"
+    + "  · Footer : at the bottom of each page, 1px #e5e5e5 line on top, 11px #707072, left 'Name · Application for (target job)' / right 'n / 3 — document name'.\n"
+    + "[Line breaks] Apply word-break:keep-all; overflow-wrap:break-word; to all elements. If a title or label ends with a single orphan word, fix it with <br> or &nbsp;.\n"
+    + "[Print] @page{size:A4;margin:0} · .page{page-break-after:always}, last page auto · on html, body and all elements -webkit-print-color-adjust:exact; print-color-adjust:exact;\n\n"
+
+    + "# PART C. P3 strength radar chart\n"
+    + RADAR_SPEC
+    + "· Use exactly the 6 strength axes and scores decided in ③ (do not choose new ones or lower them).\n"
+    + "· Set label font to font-family=\"'Pretendard','Segoe UI','Malgun Gothic',sans-serif\" font-weight=\"700\".\n"
+    + "· Placement : top of P3 page 2, centered. Instead of a width attribute, give the SVG style=\"width:100%;max-width:360px;height:auto\", and below it the caption '※ Self-assessment based on experience and results (5-point scale)' 11px #707072.\n\n"
+
+    + "# PART E. Photo spots — 1 ID photo + 1 P3 profile photo + 2–4 field records\n"
+    + "· If the applicant uploaded photos in this conversation, use them; if not, create 'photo spots'. Do not finish by removing the photo spots because there are no photos.\n"
+    + "· Photo spot (.photo-slot) : background #f5f5f5, 1px dashed #cacacb, centered content (flex), guide text 11px #9e9ea0 line-height 1.5.\n"
+    + "   - ID photo : right side of the P1 header (one flex row with the title block; the title takes the remaining width), 30mm × 40mm, flex-shrink:0. Guide text 'ID photo<br>Please attach<br>(3×4 cm)'. (Korean employers usually expect an ID photo on the resume.)\n"
+    + "   - P3 profile photo : right side of the P3 cover, square 120px · 14px corners (92px on mobile). Guide text 'Profile photo<br>Please attach'. If no separate profile photo is given, crop the ID photo to a square (object-position:center top) and use it too.\n"
+    + "   - Field records : P3 section 04, 2×2 grid (1 column on mobile), cell height 150px (190px on mobile). Guide text 'Attach photo<br>(scene suggested in ③)'. Caption below, 11.5px — '<b>bold title</b> — description'.\n"
+    + "· When photos arrive, replace with <img> of the same size : object-fit:cover; border:1px solid #cacacb; (ID photo: object-position:center top)\n"
+    + "· Embed photos in the HTML as base64 (data URI) to keep a single file. If you cannot create files, use <img src=\"photo-id.jpg\">, photo-01.jpg … and say 'Save the photos with these English names in the same folder as the HTML'.\n"
+    + "· When you receive photos, even without instructions: put the ID photo (front-facing upper body) in P1 and the P3 profile spot, put the others into the P3 field-record cells in the order received, refine captions after looking at the photos, and rebuild the file with the same name. Ask in one line only about photos whose place is unclear.\n\n"
+
+    + "# PART F. P3 visual spec — render P3 by this spec (same as the spec at the bottom of prompt ③)\n"
+    + P3_VIZ_SPEC + "\n"
+    + "# PART G. Translation-ready build (for the Korean version in prompt ⑤)\n"
+    + "· Put every visible word in real HTML text — never inside images. The only text inside SVG is the radar labels.\n"
+    + "· Do not use CSS text-transform for meaning (write the eyebrow 'RESUME' in capitals directly) and do not use ::before/::after content for words (only for the bullet dot).\n"
+    + "· Leave room: Korean text is usually shorter than English, but titles and labels can wrap differently. Avoid fixed heights on text boxes (except photo spots); let them grow.\n"
+    + "· Use <html lang=\"en\"> and keep class names in English (they stay the same in the Korean version).\n\n"
+    + FILE_NAME_RULE + "\n"
+    + "# PART D. Output order (in this order)\n"
+    + "1) First show the full integrated document as text in the chat (to confirm the content first).\n"
+    + "2) Then create a single HTML file with the design system above. No external libraries or CDN CSS; write styles directly in <style>. Images are only the PART E photos; everything else is text and SVG.\n"
+    + "   · If you can create files (e.g., Claude), provide a real .html file. File name in English, following the [File name rule].\n"
+    + "   · If you cannot create files (e.g., GPT, Gemini), show the full HTML in one code block and add a 2-line guide: 'Paste into Notepad and save as UTF-8 with an English file name (e.g., nguyen-van-an_application_260812.html) → open with Chrome'.\n"
+    + "3) Then ask in one line — \"Would you like a Word (.docx) or PDF version too?\" For Word, keep the same order and items, but turn number boxes, chips and roadmap cards into tables, and use Pretendard (or Arial if not available). File names in English here too.\n"
+    + "4) 3 guide lines — ① Open the HTML in Chrome → Ctrl+P → Destination 'Save as PDF' → Margins 'None' → check 'Background graphics' → A4 PDF done "
+    + (hasT ? "② To apply to another company, change only the 'Target company information' in STEP 1 of the tool and copy the prompts again — the same experiences become documents tailored to that company. " : "② When a target posting is decided, paste the ideal candidate / job description and refine in this order: headline → core competencies → self-introduction → P3 Job Fit. ")
+    + "③ For the Korean version, use prompt ⑤ from the tool — it translates this HTML into natural Korean and keeps the same layout.\n"
+    + "5) If even one photo spot is empty, ALWAYS end with this message —\n"
+    + "   \"📷 X photo spots are empty. Upload 1 ID photo (plus 1 profile photo if you have a separate one) and field photos (suggested : XX / XX …) to this chat, and I will put them in place and send the same file again. To submit without photos, say 'remove the photo spots'.\"\n\n"
+
+    + "# Self-check before submission — everything must be 'yes'\n"
+    + "- [ ] Is it P1 1 page · P2 1 page · P3 2 pages? Is no content cut off or spilling to the next page?\n"
+    + "- [ ] No invented facts or numbers that were not in the conversation above? Empty items left as '(fill in)'?\n"
+    + "- [ ] Only neutral colors? No shadows or emoji decoration? Rounded corners only on chips, P3 cards, number boxes and the profile photo?\n"
+    + "- [ ] Do the P3 01 number-box counts = the chip counts? Exactly 1 ★ chip (black)? Of the 3 cards in 05, does only D+90 have a black border?\n"
+    + "- [ ] Do the radar chart's axes and scores match ③'s 6 strength axes and bar list exactly?\n"
+    + "- [ ] Is there no 🔒 insight report content (weak points, improvements, interview prep, 1-minute intro) in P3?\n"
+    + "- [ ] Are there ID photo, P3 profile photo and field-record photo spots, and is every received photo in place?\n"
+    + "- [ ] At phone width (about 390px), no horizontal scroll and no text spilling out of chips or cards?\n"
+    + "- [ ] word-break:keep-all applied to all text, and no single orphan word at the end of titles?\n"
+    + "- [ ] Are footer page numbers right (Resume 1 / 3 · Self-introduction 2 / 3 · both portfolio pages 3 / 3)?\n"
+    + "- [ ] Is every visible word real HTML text (translation-ready, PART G)?\n"
+    + "- [ ] Do the created file names contain no spaces, Korean or special characters?"
+    + (hasT ? "\n- [ ] Is at least 1 posting/ideal-candidate keyword in each of P1, P2 and P3, with evidence? No invented company facts?" : "");
+
+  // ── Prompt 5 : Korean version (localization of the final English HTML) ──
+  // Written in Korean on purpose: Korean instructions make the AI write more natural Korean.
+  var refL = [];
+  refL.push("- 영문 이름(여권): " + (d.name || "(미입력)"));
+  refL.push("- 한글 이름: " + (d.nameKo ? d.nameKo + " (지원자가 직접 입력 — 이 표기를 그대로 사용)" : "(미입력 — 외래어 표기법으로 음역하고 확인 필요로 표시)"));
+  if(d.nationality) refL.push("- 국적: " + d.nationality);
+  if(d.visa) refL.push("- 체류자격(비자): " + d.visa);
+  refL.push("- 지원 직무(영문): " + job);
+  if(co) refL.push("- 지원 기업(입력값): " + co);
+  if(d.koreanLevel) refL.push("- 한국어 능력(입력값): " + d.koreanLevel);
+  if(d.languages) refL.push("- 기타 언어(입력값): " + d.languages);
+  fmtLines(d.education, "- 학력(입력값): ").forEach(function(x){ refL.push(x); });
+  fmtLines(d.certifications, "- 자격(입력값): ").forEach(function(x){ refL.push(x); });
+
+  var p5 = "# 역할\n"
+    + "당신은 한국 관광산업 채용 서류를 14년간 첨삭해 온 한국어 취업문서 편집자이자, 영한 전문 번역가입니다. 당신의 일은 '직역'이 아니라 '현지화'입니다 — 한국 채용담당자가 읽었을 때 처음부터 한국어로 쓴 서류처럼 읽히게 만드는 것.\n\n"
+    + "# 목표\n"
+    + "이 채팅에 첨부된(또는 위 대화에서 만든) 최종 영문 HTML 서류 — P1 이력서 / P2 자기소개서 / P3 취업 포트폴리오 — 를 자연스러운 한국어 제출본으로 바꾸세요. 레이아웃·디자인·사진·차트 좌표는 그대로 두고 '글자만' 한국어로 교체합니다.\n"
+    + "※ 지원자는 한국어가 서툰 외국인 유학생입니다. 서류는 한국어로 쓰되, 지원자에게 하는 질문·안내·설명은 모두 영어로 하세요.\n\n"
+    + "[참고 정보 — 지원자가 도구에 직접 입력한 원문]\n" + refL.join("\n") + "\n\n"
+    + "# 진행 순서 (이 순서 고정)\n"
+    + "STEP 1. 고유명사·용어 표기표 — 번역 전에 먼저 표로 확정\n"
+    + "  | 영문 원문 | 한국어 표기 | 근거(지원자 입력 / 공식 명칭 / 외래어 표기법 / 업계 통용) | 확신도(확실 / 확인 필요) |\n"
+    + "  · 대상 : 지원자 이름, 국적, 학교·학과, 회사·기관명, 자격증·시험명, 직함, 프로그램·행사명.\n"
+    + "  · 지원자 이름 : 위 [참고 정보]의 한글 이름이 있으면 그대로 사용. 없으면 국립국어원 외래어 표기법 기준으로 음역하고 '확인 필요'. 문서의 성명 칸은 '한글 이름 (영문 여권명)' 형식으로 병기 (예: 응우옌 반 안 (NGUYEN VAN AN)). 중국어권 이름은 한자음 표기와 원어 발음 표기가 갈리므로 반드시 '확인 필요'.\n"
+    + "  · 한국 학교·기업·기관 : 공식 한글 명칭을 쓴다. 공식 명칭이 확실하지 않으면 지어내지 말고 '확인 필요'. 학과명은 학교마다 다르므로 지원자가 적지 않았다면 '확인 필요'.\n"
+    + "  · 해외 학교·기관 : '한글 음역(영문 공식명)' 형식으로 첫 등장 시 병기 (예: 하노이대학교(Hanoi University)).\n"
+    + "  · 한국 국가자격은 공식 한국어 명칭으로 되돌린다 (예: Tourist Interpretation Guide → 관광통역안내사). 외국 시험·자격은 영문 그대로 (TOEIC, MOS, HSK).\n\n"
+    + "STEP 2. 문서별 문체 규칙에 맞춰 번역 — 문체를 섞지 말 것\n"
+    + "  [P1 이력서]\n"
+    + "  · 헤드라인 : 명사로 끝나는 한 문장 (예: 하루 80팀 체크인을 3개 국어로 응대한 호텔 인턴 출신 프론트 지원자).\n"
+    + "  · 핵심 역량 3줄·경력 성과·기타 활동 : 개조식 명사형 종결 (~응대 / ~수행 / ~달성 / ~작성 / ~운영). '~했습니다'·'~함' 금지, 문장 끝 마침표 없음.\n"
+    + "    예) Handled about 80 check-ins a day for guests from 20+ countries → 20개국 이상 투숙객 대상 일 평균 약 80팀 체크인 응대\n"
+    + "  · '→ 직무 연결' 줄 : '→ '로 시작하는 명사형 한 줄 (예: → 다국어 응대 경험으로 프론트 업무 즉시 투입 가능).\n"
+    + "  · 자기소개(이력서 3번 칸) : 합니다체, 공백 포함 300자 내외.\n"
+    + "  [P2 자기소개서]\n"
+    + "  · 합니다체(~습니다/~했습니다)로 통일. 해요체·반말·'~하였사옵니다' 같은 과잉 존대 금지.\n"
+    + "  · 분량(공백 포함 한글 글자 수) : Q1 400~500자 / Q2 500~600자 / Q3 400~500자 / Q4 300~400자. 기업이 정한 글자 수가 있으면 그 기준을 따른다.\n"
+    + "    모자라면 영문 원문에 있는 사실을 풀어 쓰는 범위에서만 보강하고, 넘치면 수식어부터 줄인다. 새 사실·숫자 추가 금지.\n"
+    + "  · 각 문항 끝의 '(XX words)'는 공백 포함 한글 글자 수로 다시 세서 '(○○자)'로 바꾼다.\n"
+    + "  · 소제목은 영어 문장을 옮기지 말고, 같은 의미의 한국어다운 짧은 명사구·문장으로 새로 쓴다 (15자 내외).\n"
+    + "  [P3 포트폴리오]\n"
+    + "  · 칩·표·라벨 : 명사형. 05 카드의 '할 일'은 '~합니다'로 끝나는 한 문장(40자 내외), 카드 아래 요약도 '~재현합니다'.\n"
+    + "  · 레이더 차트 축 이름은 한국어 6자 이내 + 점수 (예: Guest Care 5 → 고객응대 5). 표의 강점명과 똑같이 맞출 것.\n"
+    + "  · 05 단계명은 '2글자 · 2글자' (예: Learn · Align → 파악 · 정렬).\n\n"
+    + "  [고정 라벨 대응표 — 아래 표기를 그대로 쓸 것]\n"
+    + "  · RESUME → RESUME · 이력서 / SELF-INTRODUCTION → SELF-INTRODUCTION · 자기소개서 / PORTFOLIO → PORTFOLIO · 취업 포트폴리오 / (continued) → (계속)\n"
+    + "  · Basic Information → 기본정보 / Core Competencies → 핵심 역량 / Self-introduction → 자기소개 / Education → 학력 / Experience → 경력 / Certifications & Languages → 자격 및 어학 / Other Activities → 기타 활동 경력\n"
+    + "  · Name → 성명 / Nationality → 국적 / Visa status → 체류자격 / Date of birth → 생년월일 / Phone → 연락처 / Email → 이메일 / City → 거주지 / (fill in) → (직접 기입)\n"
+    + "  · Q1 Motivation → Q1 지원 동기 / Q2 Key Experience & Competency → Q2 핵심 경험·역량 / Q3 Job Fit & My Strengths → Q3 직무 적합성·나의 강점 / Q4 Goals After Joining → Q4 입사 후 포부\n"
+    + "  · 01 My Assets → 01 보유 자산 — 한눈에 보는 나의 무기 / 02 Strength Profile → 02 강점 프로필 — 근거 기반 6대 강점 / 03 Job Fit → 03 직무 적합도 — 이 직무가 요구하는 것 ↔ 내가 이미 해 본 것 / 04 Field Records → 04 현장 기록 — 사진으로 보는 증거 / 05 90-Day Contribution Roadmap → 05 입사 후 90일 기여 로드맵\n"
+    + "  · On the job → 현장에서 / Signature asset → 시그니처 자산 / Tool level : Expert > Proficient > Basic → 도구 숙련도 : 전문 > 능숙 > 활용 / Evidence → 근거 / Output → 산출물 / Ready now → 즉시 투입 가능 / Strong → 강점 보유\n"
+    + "  · Average X.X / 5 · Sharpest strength → 평균 ○.○ / 5 · 가장 뾰족한 강점 / Job fit : ready now for X of 5 requirements → 직무 적합도 : 요구역량 5개 중 ○개 즉시 투입 가능\n"
+    + "  · ※ Self-assessment based on experience and results (5-point scale) → ※ 경험·성과 근거 기반 자기평가(5점 척도)\n"
+    + "  · 사진 자리 안내문 → '증명사진<br>첨부해 주세요<br>(3×4cm)' / '프로필 사진<br>첨부해 주세요' / '사진 첨부<br>(추천 장면)'\n"
+    + "  · 푸터 → 왼쪽 '이름 · 지원 직무 제출 문서'(기업이 있으면 '이름 · 기업명 지원 문서') / 오른쪽 '1 / 3 — 이력서', '2 / 3 — 자기소개서', '3 / 3 — 취업 포트폴리오'\n\n"
+    + "  [표기 규칙]\n"
+    + "  · 날짜 : 2024.03 ~ 2025.02 (12개월). 'Mar 2024' 같은 영어식 표기 금지.\n"
+    + "  · 숫자 : 1,200명 / 약 80팀 / 30% / 3회. 'about'은 '약', '20+'는 '20개 이상'. 통화는 '원'.\n"
+    + "  · 한국어 능력 : TOPIK Level 4 → TOPIK 4급 / KIIP Level 3 → 사회통합프로그램(KIIP) 3단계 / Native → 모국어 / Business level → 비즈니스 회화 가능 / Daily conversation → 일상 회화 가능.\n"
+    + "  · 체류자격 : 'D-2(유학)', 'D-4(일반연수)', 'D-10(구직)', 'E-7(특정활동)', 'F-2(거주)', 'F-4(재외동포)', 'F-5(영주)', 'F-6(결혼이민)' 형식. Part-time work permit → 시간제 취업 허가. 입력값에 없는 체류자격·허가는 쓰지 말 것.\n"
+    + "  · 업계 통용어는 영문 유지 : VIP, F&B, MICE, PCO, OP, CS, SNS, PMS. 그 밖의 약어는 첫 등장 시 '한국어(영문)' 병기.\n"
+    + "  · '귀사' 금지 → 기업명. 기업이 없으면 '입사 후'처럼 주어 없이 쓴다.\n\n"
+    + "STEP 3. 번역투 제거 점검 — 아래 패턴을 전부 찾아 고친 뒤 결과만 반영\n"
+    + "  1. 주어 반복 : 문장마다 '저는/나는' → 생략. '저는'은 문단당 최대 1회, '나는'은 금지.\n"
+    + "  2. have 직역 : '~을 가지고 있습니다' → '~이 있습니다 / ~을 갖췄습니다 / 보유'.\n"
+    + "  3. 피동 남발 : '~되어졌다 / ~에 의해 ~되었다' → 능동 '~했다'.\n"
+    + "  4. 연결어 직역 : '~에 대한 / ~에 있어서 / ~를 통해서 / ~함에 따라' 남발 → 줄이거나 다른 말로.\n"
+    + "  5. '것' 남발 : '~하는 것은 ~하는 것입니다' → 명사화하거나 문장 분리.\n"
+    + "  6. 복수 '들' : '고객들 / 경험들' → '고객 / 경험'.\n"
+    + "  7. 영어 어순 관형절 : 한 문장에 '~한 ~인 ~하는' 3겹 이상 → 두 문장으로.\n"
+    + "  8. 직역 콜로케이션 : 'make an effort → 노력을 만들다', 'take responsibility → 책임을 가졌다', 'gain experience → 경험을 얻었다' → '힘썼습니다 / 책임졌습니다 / 경험을 쌓았습니다'.\n"
+    + "  9. 대명사 : '그/그녀/그것' → 직함·명사로 바꾸거나 생략.\n"
+    + "  10. 'I believe / I think' 반복 → '~라고 생각합니다' 남발 금지, 근거가 있으면 단정형.\n"
+    + "  11. 'one of the ~' → '~ 중 하나' 남발 금지.\n"
+    + "  12. 자기 비하·양해 : '외국인이라 부족하지만 / 한국어가 서툴지만' 금지 → 모국어·출신 국가·다문화 경험은 강점으로 서술.\n"
+    + "  13. 문체 혼용 : 한 문서 안에서 합니다체·개조식·해요체가 섞인 곳 → 문서별 규칙으로 통일.\n"
+    + "  14. 금지 표현(한국어판에도 그대로) : 성실한·열정적인·책임감 있는·소통 능력·최선을 다하겠습니다·~한 인재가 되겠습니다·어릴 적부터·귀사.\n\n"
+    + "STEP 4. 한국어 HTML 파일 만들기\n"
+    + "  · 원본 영문 HTML의 구조·CSS·클래스명·SVG 좌표·사진(base64)은 한 글자도 바꾸지 말고 '보이는 글자'만 교체한다. <html lang=\"ko\">로 변경.\n"
+    + "  · 코드 실행·파일 편집 도구가 있으면 원본 파일을 복사한 뒤 텍스트만 치환하는 방식으로 만들어 사진 데이터가 깨지지 않게 할 것.\n"
+    + "    도구가 없어 사진 데이터를 그대로 옮길 수 없다면, 사진은 사진 자리(.photo-slot)로 바꿔 두고 '사진을 이 채팅에 다시 올려 주세요'라고 영어로 안내.\n"
+    + "  · 레이더 차트 라벨 글꼴 : font-family=\"'Pretendard','Malgun Gothic',sans-serif\" font-weight=\"700\".\n"
+    + "  · 모든 요소에 word-break:keep-all; overflow-wrap:break-word; — 한글 단어 중간 줄바꿈 금지. 제목·라벨 끝 1~2글자가 혼자 떨어지면 <br>로 정리.\n"
+    + "  · 장 구성은 영문판과 같게 (P1 1장 · P2 1장 · P3 2장). 넘치면 근거 문장을 줄이고, 비면 영문판에 있던 근거를 한 줄 더 풀어 쓴다.\n"
+    + "  · 파일명 : (영문이름)_application_ko_YYMMDD.html (예: nguyen-van-an_application_ko_260812.html). 한글·공백·특수문자 금지.\n\n"
+    + "# 절대 규칙\n"
+    + "1. 영문판에 없는 사실·숫자·연도를 추가하지 말 것. 영문판의 숫자는 하나도 빠짐없이 한국어판에 같은 값으로 들어가야 한다.\n"
+    + "2. 의미를 바꾸지 말 것. 더 자연스럽게 다듬는 것은 허용, 성과를 부풀리거나 줄이는 것은 금지.\n"
+    + "3. 영문판의 '(fill in)'은 '(직접 기입)'으로 그대로 남긴다.\n\n"
+    + "# 출력 순서\n"
+    + "(1) STEP 1 고유명사·용어 표기표\n"
+    + "(2) 한국어 전문 텍스트 (P1 → P2 → P3) — 내용 확인용\n"
+    + "(3) STEP 3 번역투 점검 결과 한 줄 (고친 패턴 수) + 숫자 대조 결과 한 줄 (영문판 숫자 ○개 = 한국어판 ○개)\n"
+    + "(4) 한국어 HTML 파일\n"
+    + "(5) For the applicant — in English : ① 표 | 한국어 문장 | Meaning in English | — P1 헤드라인, 핵심 역량 3줄, P2 소제목 4개, P3 핵심 메시지의 영어 역번역 (의미가 바뀌지 않았는지 지원자가 직접 확인하도록) ② STEP 1에서 '확인 필요'로 표시한 항목을 영어 질문으로 정리 (예: 'Is the official Korean name of your department 호텔관광경영학과?') ③ 'Answer the questions above and I will rebuild the same file. Before you submit, ask a Korean teacher or friend to read P2 aloud once.' 한 줄.";
+
+  return [
+    {id:"p1", ico:"📋", title:"① Resume Draft — Fill the 7 Resume Sections with Numbers",
+      usage:"Breaks your experiences into a spec analysis table → for each experience, 'result bullets + one line linking it to the job' → headline, 3 core-competency lines and a short self-introduction. The output matches the Korean resume template 1:1. Always use this one first.",
+      tip:"When you get the result, answer the '🔎 Number follow-up questions' and say \"Rewrite the experience bullets with these numbers\" — the quality goes up a lot.", content:p1},
+    {id:"p2", ico:"📄", title:"② Self-Introduction (4 Questions) — A Complete Draft With No Overlap",
+      usage:"Paste it in the SAME chat, right after ①. A material allocation table blocks overlap between questions, and your ★ key experience is written in depth in the Key Experience question. This is the Korean-style 'jagisogaeseo', not a Western cover letter.",
+      tip:"If you have a job posting, paste it after the result and say \"Rewrite this for the ideal candidate and job description in this posting\".", content:p2},
+    {id:"p3", ico:"📁", title:"③ Job Portfolio — My Assets · Strength Map · Job Fit · 90-Day Roadmap + a Private Insight Report",
+      usage:"Paste it in the same chat after ① and ②. An 'evidence' document that does not repeat the resume's numbers — My Assets (→ what you can do on the job), strength radar (only strengths with evidence, 4–5 points), job-fit matrix, field-photo spots and a 90-day contribution roadmap (your own success process as 3 cards). Paste it into Notion or move it to PPT section by section; in Claude you also get an HTML preview file. You also get a private '🔒 Insight Report' (improvement plan, document consistency check, interview questions, 1-minute self-introduction) that you do NOT submit.",
+      tip:(hasT
+        ? "The posting and ideal candidate of " + coName + " you entered in STEP 1 are already included. Job Fit uses the posting's words, and the 🔒 report adds posting coverage and an ideal-candidate match table. The radar chart comes as radar-chart.svg (English file name)."
+        : "If you have a job posting, paste the original posting under the [Job posting] line at the very end of the prompt before sending (or enter it in 'Target company' in STEP 1 to apply it to all prompts). The radar chart comes as radar-chart.svg (English file name)."), content:p3},
+    {id:"p4", ico:"🧩", title:"④ Final Document — A Ready-to-Submit A4 Set (Resume · Self-Introduction · Portfolio)",
+      usage:"The last English step. No template file needed — just paste this prompt in the same chat. You get a print-ready A4 document in black-and-white editorial design (colors, fonts, spacing and the radar chart are all fixed by spec) — P1 Resume / P2 Self-introduction / P3 Portfolio (2 pages) — as a finished file. It is built 'translation-ready' for step ⑤. If photo spots are empty, it first asks you to upload photos.",
+      tip:"Just upload photos to the chat after you get the result — the ID photo goes to P1 and the others to P3 Field Records automatically. In Chrome: Ctrl+P → 'Save as PDF' → Margins 'None' → check 'Background graphics' → a PDF ready to submit.", content:p4},
+    {id:"p5", ico:"🇰🇷", title:"⑤ Korean Version — Turn the Final English HTML Into Natural Korean",
+      usage:"After ④. Recommended: open a NEW chat, attach your final English HTML file (…_application_YYMMDD.html) and paste this prompt (pasting it in the same chat also works). It keeps the same layout, photos and chart, and replaces only the text with natural Korean that follows Korean resume style. This prompt is written in Korean on purpose — Korean instructions make the AI write more natural Korean. All questions and explanations to you will be in English.",
+      tip:"You get an English back-translation of the key sentences so you can check that the meaning did not change. If your HTML already has photos inside, the file is large — it is easier to translate the version without photos and upload the photos again in the Korean chat. Before submitting, ask a Korean teacher or friend to read the self-introduction aloud once.", content:p5},
+  ];
+}
+
+function completion(d) {
+  var e0 = d.expList[0] || {};
+  var anyNum = d.expList.some(function(e){return e.numbers && e.numbers.trim();});
+  var checks = [
+    !!d.name, !!d.jobCategory,
+    !!(d.education.trim() || d.certifications.trim() || d.koreanLevel.trim()),
+    !!(e0.org && e0.duty), anyNum,
+    !!d.starAction, !!d.starResult,
+    !!d.motivation, !!d.differentiator,
+  ];
+  var filled = checks.filter(Boolean).length;
+  return Math.round(filled/checks.length*100);
+}
+
+// ─────────────────────────── Shared UI ───────────────────────────
+function SH({eyebrow, title, sub, time}) {
+  return (
+    <div style={{marginBottom:22}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+        <span style={{color:C.accent,fontWeight:700,fontSize:10,letterSpacing:"0.15em",textTransform:"uppercase"}}>{eyebrow}</span>
+        {time && <span style={{background:C.borderSoft,color:C.muted,fontSize:10.5,fontWeight:700,padding:"2px 9px",borderRadius:12}}>⏱ {time}</span>}
+      </div>
+      <h1 style={{fontWeight:800,fontSize:"clamp(19px,4vw,26px)",letterSpacing:"-0.02em",color:C.ink,margin:"0 0 7px",lineHeight:1.25}}>{title}</h1>
+      <p style={{color:C.muted,fontSize:13.5,lineHeight:1.7,margin:0}}>{sub}</p>
+    </div>
+  );
+}
+function F({label, hint, req, opt, children}) {
+  return (
+    <div style={{marginBottom:16}}>
+      <label style={{display:"block",marginBottom:6}}>
+        <span style={{fontWeight:600,color:C.ink,fontSize:13.5}}>{label}</span>
+        {req && <span style={{color:C.accent,marginLeft:3}}>*</span>}
+        {opt && <span style={{background:C.borderSoft,color:C.muted,fontSize:10.5,fontWeight:700,padding:"1px 8px",borderRadius:10,marginLeft:6,verticalAlign:"1px"}}>Optional · skip if none</span>}
+        {hint && <div style={{color:C.muted,fontSize:11.5,marginTop:3,lineHeight:1.5,fontWeight:400,whiteSpace:"pre-line"}}>{hint}</div>}
+      </label>
+      {children}
+    </div>
+  );
+}
+const IS = {width:"100%",border:"1px solid #E5E5EA",borderRadius:9,padding:"10px 12px",fontSize:13.5,color:"#1D1D1F",background:"#fff",lineHeight:1.6};
+function TI({val, set, ph}) { return <input type="text" value={val} onChange={e=>set(e.target.value)} placeholder={ph} style={IS}/>; }
+function TA({val, set, ph, rows=3}) { return <textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} style={IS}/>; }
+function Grid2({m, children}) { return <div style={{display:"grid",gridTemplateColumns:m?"1fr":"1fr 1fr",gap:12}}>{children}</div>; }
+
+function Notice({ico, tone, children}) {
+  var bg = tone==="warn"?C.warnBg:tone==="good"?C.goodBg:C.accentBg;
+  var bd = tone==="warn"?C.warn:tone==="good"?C.good:C.accent;
+  return (
+    <div style={{background:bg,border:"1px solid "+bd,borderRadius:10,padding:"11px 14px",marginBottom:20,display:"flex",gap:9,alignItems:"flex-start"}}>
+      <span style={{fontSize:16,flexShrink:0}}>{ico}</span>
+      <div style={{fontSize:12.5,color:C.ink,lineHeight:1.65}}>{children}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────── STEP 1 : Basic info · target job ───────────────────────────
+function S1({d, u, m}) {
+  var ex = exFor(d);
+  // The target-company fields open only for people who choose 'Yes' (otherwise just move on)
+  var _co = useState(hasTarget(d)); var hasCo = _co[0]; var setHasCo = _co[1];
+  function pickCo(yes){
+    if(!yes && hasTarget(d)){
+      if(!window.confirm("Delete the company information you entered and build the prompts for the job only?")) return;
+      u("targetCompany",""); u("targetPosting",""); u("targetTalent","");
+    }
+    setHasCo(yes);
+  }
+  return (
+    <>
+      <SH eyebrow="STEP 01 · Basic info & target job" time="about 3 min"
+        title="Let's start lightly with your basic information"
+        sub="Only your name is required. Empty items will show as '(fill in)' in the final document, so write what you remember quickly and move on."/>
+      <Notice ico="✍️"><b>Simple English is perfectly fine.</b> Short sentences, small mistakes, or a few words in your own language are OK — the prompts tell the AI to understand your meaning and write polished English. It will never add facts you did not write.</Notice>
+      <div style={{fontWeight:800,fontSize:14.5,color:C.ink,marginBottom:12}}>Basic information — resume section 1</div>
+      <Grid2 m={m}>
+        <F label="Name (as in your passport)" req><TI val={d.name} set={function(v){u("name",v);}} ph="e.g., NGUYEN Van An"/></F>
+        <F label="Name in Korean (Hangul)" opt hint="If you already use a Korean spelling of your name (school ID, bank, part-time job), write it. It is used for the Korean version.">
+          <TI val={d.nameKo} set={function(v){u("nameKo",v);}} ph="e.g., 응우옌 반 안"/>
+        </F>
+      </Grid2>
+      <Grid2 m={m}>
+        <F label="Nationality" opt><TI val={d.nationality} set={function(v){u("nationality",v);}} ph="e.g., Vietnam"/></F>
+        <F label="Visa status" opt hint="Korean employers often check this. Write only what is true; leave it blank if you are not sure.">
+          <TI val={d.visa} set={function(v){u("visa",v);}} ph="e.g., D-2 (Student), part-time work permit / D-10 (Job seeker)"/>
+        </F>
+      </Grid2>
+      <Grid2 m={m}>
+        <F label="Date of birth" opt><TI val={d.birth} set={function(v){u("birth",v);}} ph="e.g., 2001.03.15 (or just 'born in 2001')"/></F>
+        <F label="Phone" opt><TI val={d.phone} set={function(v){u("phone",v);}} ph="e.g., 010-0000-0000"/></F>
+      </Grid2>
+      <Grid2 m={m}>
+        <F label="Email" opt><TI val={d.email} set={function(v){u("email",v);}} ph="e.g., abc@gmail.com"/></F>
+        <F label="City of residence" opt hint="City and district only (e.g., Seoul, Jung-gu). No detailed address needed.">
+          <TI val={d.address} set={function(v){u("address",v);}} ph="e.g., Seoul, Jung-gu"/>
+        </F>
+      </Grid2>
+      <F label="Website · SNS" opt hint="Write it if you have one; if not, just move on. Don't go searching for links now — you can add them later in Word.">
+        <TI val={d.homepage} set={function(v){u("homepage",v);}} ph="e.g., Instagram @abc / blog address"/>
+      </F>
+      <div style={{borderTop:"1px dashed "+C.border,margin:"22px 0 18px"}}/>
+      <F label="Which field are you applying to?" req hint="Choose the closest field. Once selected, the examples in all later questions change to match that job.">
+        <div style={{display:"grid",gridTemplateColumns:m?"1fr 1fr":"repeat(4,1fr)",gap:8}}>
+          {JOBS.map(function(j){
+            var on = d.jobCategory===j.id;
+            return (
+              <button key={j.id} onClick={function(){u("jobCategory",j.id); u("jobSub","");}}
+                style={{border:"1.5px solid "+(on?C.ink:C.border),background:on?C.ink:"#fff",color:on?"#fff":C.ink,
+                  borderRadius:10,padding:"11px 8px",fontSize:12.5,fontWeight:700,cursor:"pointer",lineHeight:1.3}}>{j.label}</button>
+            );
+          })}
+        </div>
+      </F>
+      {d.jobCategory==="custom" && (
+        <F label="Type your field" req>
+          <TI val={d.jobCustom} set={function(v){u("jobCustom",v);}} ph="e.g., Cruise crew / Theme park operation / Tourism start-up"/>
+        </F>
+      )}
+      {d.jobCategory && d.jobCategory!=="custom" && JOB_SUBS[d.jobCategory].length>0 && (
+        <F label="Specific job" opt hint="Choose the closest one. If unsure, you can skip it.">
+          <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+            {JOB_SUBS[d.jobCategory].map(function(s){
+              var on = d.jobSub===s;
+              return (
+                <button key={s} onClick={function(){u("jobSub",on?"":s);}}
+                  style={{border:"1.5px solid "+(on?C.accent:C.border),background:on?C.accentBg:"#fff",color:on?C.accent:C.muted,
+                    borderRadius:18,padding:"7px 13px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{s}</button>
+              );
+            })}
+          </div>
+        </F>
+      )}
+      <F label="Position / type of hire" opt>
+        <TI val={d.role} set={function(v){u("role",v);}} ph={ex.role}/>
+      </F>
+      <div style={{borderTop:"1px dashed "+C.border,margin:"22px 0 18px"}}/>
+      <div style={{border:"1px solid "+C.border,borderRadius:12,padding:"15px 16px",background:C.canvas,marginBottom:hasCo?16:0}}>
+        <div style={{fontWeight:800,fontSize:14,color:C.ink,marginBottom:5}}>🏢 Have you already chosen a company? <span style={{color:C.faint,fontWeight:600,fontSize:12}}>(optional)</span></div>
+        <p style={{color:C.muted,fontSize:12,lineHeight:1.65,margin:"0 0 12px"}}>
+          <b style={{color:C.ink}}>It is completely fine if you haven't.</b> If you leave this empty, your resume, self-introduction and portfolio are completed normally for {d.jobCategory ? ("the '"+jobLabel(d)+"' job") : "the job you selected"}.
+          Adding a posting is an <b style={{color:C.ink}}>extra option</b> that tailors the documents to that company. When you have a company later, come back to STEP 1, add it, and copy the prompts again.
+        </p>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {[{k:false,t:"Not yet → just continue"},{k:true,t:"Yes → enter the posting"}].map(function(o){
+            var on = hasCo===o.k;
+            return (
+              <button key={String(o.k)} onClick={function(){ pickCo(o.k); }}
+                style={{border:"1.5px solid "+(on?C.ink:C.border),background:on?C.ink:"#fff",color:on?"#fff":C.ink,
+                  borderRadius:9,padding:"10px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>{on?"✓ ":""}{o.t}</button>
+            );
+          })}
+        </div>
+      </div>
+      {hasCo && (
+        <>
+          <Notice ico="💡">Fill in <b>only what you have</b> among the three fields. Only the company name, or only the posting, is enough. The documents work even with empty fields. A posting written in Korean is fine — paste it as it is.</Notice>
+          <F label="Company name" opt>
+            <TI val={d.targetCompany} set={function(v){u("targetCompany",v);}} ph="e.g., Grand Korea Leisure (GKL) / Lotte Hotel Seoul / Korea Tourism Organization"/>
+          </F>
+          <F label="Job posting (original text)" opt hint="Copy the 'Duties · Requirements · Preferred qualifications' part of the posting page and paste it all. No need to organize it. Leave empty if the posting is not out yet.">
+            <TA val={d.targetPosting} set={function(v){u("targetPosting",v);}} rows={6} ph={"e.g.,\n[Duties] Foreign guest service and reservations, VIP protocol\n[Requirements] Graduate (or expected) in a related major, conversational English\n[Preferred] TOPIK Level 4 or higher, hotel internship experience"}/>
+          </F>
+          <F label="Ideal candidate · core values · company information" opt hint="Paste the 'ideal candidate' from the careers page and the vision/core values from the company introduction. Leave it empty if hard to find. (The prompts block the AI from inventing company information that is not here.)">
+            <TA val={d.targetTalent} set={function(v){u("targetTalent",v);}} rows={4} ph={"e.g.,\nIdeal candidate : A service person who moves guests / An innovator who takes on change\nCore values : Trust · Challenge · Respect"}/>
+          </F>
+        </>
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────── STEP 2 : Education · certifications · languages ───────────────────────────
+function S2({d, u, m}) {
+  return (
+    <>
+      <SH eyebrow="STEP 02 · The backbone of your resume" time="about 3 min — don't spend time here"
+        title="Write education and certifications — names only, quickly"
+        sub="Write years, dates and issuers only if you remember them roughly. Empty ones show as '(fill in)' in the final document, and you can complete them later. Spend your time on the next step (experience)."/>
+      <F label="Education" opt hint={"One per line. School / major is enough. Years roughly (e.g., graduating 2026). Korean language programs count too.\nTip: if you know the official Korean name of your school or major, add it in brackets — it makes the Korean version accurate."}>
+        <TA rows={4} val={d.education} set={function(v){u("education",v);}}
+          ph={"XX University (OO대학교) / Hotel & Tourism Management / graduating 2026\nXX University Korean Language Institute / Level 5 completed / 2022\nXX High School, Hanoi (optional)"}/>
+      </F>
+      <F label="Certifications · completed courses · awards" opt hint={"One per line. The name alone is enough. Issuer and date only if you remember. Start with ones related to the target job."}>
+        <TA rows={4} val={d.certifications} set={function(v){u("certifications",v);}}
+          ph={"Tourist Interpretation Guide (Korean national license)\nCS Leaders (customer service) / 2025\nMOS Master / Microsoft"}/>
+      </F>
+      <Grid2 m={m}>
+        <F label="Korean proficiency" opt hint="TOPIK level, KIIP (Social Integration Program) level, or your real level in words. Very important for Korean employers — write it honestly.">
+          <TI val={d.koreanLevel} set={function(v){u("koreanLevel",v);}} ph="e.g., TOPIK Level 4 (2025) / daily conversation OK"/>
+        </F>
+        <F label="Other languages (incl. native)" opt hint="Your native language is a real asset in tourism. Add scores or levels if you have them.">
+          <TI val={d.languages} set={function(v){u("languages",v);}} ph="e.g., Vietnamese (native), English TOEIC 850, Chinese HSK 4"/>
+        </F>
+      </Grid2>
+      <F label="Tools you can use" opt hint="Documents, data, design, AI tools, booking systems, etc.">
+        <TI val={d.tools} set={function(v){u("tools",v);}} ph="e.g., Excel, PowerPoint, Notion, Canva, ChatGPT·Claude, Opera PMS"/>
+      </F>
+      <Notice ico="💡">It's okay if you have few certifications or languages. The prompts <b>reorder what you have by job relevance</b> and mark missing years or issuers as '(fill in)'. They never invent what you don't have.</Notice>
+    </>
+  );
+}
+
+// ─────────────────────────── STEP 3 : Experience (multiple) ───────────────────────────
+function ExpCard({e, i, d, m, updExp, delExp, canDel}) {
+  var ex = exFor(d);
+  var isStar = d.starIndex===i;
+  return (
+    <div style={{border:"1.5px solid "+(isStar?C.accent:C.border),borderRadius:14,padding:m?"14px 13px":"16px 18px",marginBottom:14,background:isStar?"#FBFDFF":"#fff",position:"relative"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,gap:8,flexWrap:"wrap"}}>
+        <div style={{fontWeight:800,fontSize:13.5,color:C.ink}}>Experience {i+1}{isStar && <span style={{color:C.accent,marginLeft:6,fontSize:12}}>★ Key experience</span>}</div>
+        {canDel && (
+          <button onClick={function(){delExp(i);}}
+            style={{border:"1px solid "+C.border,background:"#fff",color:C.muted,borderRadius:7,padding:"4px 10px",fontSize:11.5,fontWeight:600,cursor:"pointer"}}>Delete</button>
+        )}
+      </div>
+      <Grid2 m={m}>
+        <F label="Type of experience" opt hint="If nothing fits, choose 'Other (type it)'.">
+          <select value={e.type} onChange={function(ev){updExp(i,"type",ev.target.value);}} style={{...IS,height:42}}>
+            <option value="">Select</option>
+            {EXP_TYPES.map(function(t){return <option key={t} value={t}>{t}</option>;})}
+          </select>
+        </F>
+        <F label="Company · organization · activity" req hint="If there is no clear organization (freelance, personal activity), give the activity a simple name. e.g., 'Freelance Korean-Vietnamese interpreting', 'Personal Korea travel YouTube channel'">
+          <TI val={e.org} set={function(v){updExp(i,"org",v);}} ph={ex.org}/>
+        </F>
+      </Grid2>
+      {e.type===OTHER_TYPE && (
+        <F label="Type it yourself" opt>
+          <TI val={e.typeCustom||""} set={function(v){updExp(i,"typeCustom",v);}} ph="e.g., Freelance interpreting / Personal project / YouTube channel / Start-up preparation"/>
+        </F>
+      )}
+      <Grid2 m={m}>
+        <F label="Period" opt hint="Roughly is fine (e.g., 2024 ~ about 1 year).">
+          <TI val={e.period} set={function(v){updExp(i,"period",v);}} ph="e.g., 2024.03 ~ 2025.02 (12 months)"/>
+        </F>
+        <F label="Position · role" opt><TI val={e.title} set={function(v){updExp(i,"title",v);}} ph="e.g., Intern / Team member / Part-timer / Team leader"/></F>
+      </Grid2>
+      <F label="Main tasks (what you did)" req hint={"Format: task — details (numbers). Any number is good: hours, people, cases, %, points.\ne.g., Floor service — 60 tables a day / Stock check — twice a week, 0 errors / SNS — 3 posts a week"}>
+        <TA rows={2} val={e.duty} set={function(v){updExp(i,"duty",v);}} ph={ex.duty}/>
+      </F>
+      <F label="Numbers — results and scale" opt hint={"Hints: XX hours / XX people / XX cases / XX% / XX points / XX won — every number you remember. If not exact, just write the ingredients like '3 times a week × 6 months' — the AI will calculate."}>
+        <TA rows={2} val={e.numbers} set={function(v){updExp(i,"numbers",v);}} ph={ex.numbers}/>
+      </F>
+      <F label="Why this experience is a strength for the target job" opt hint="One line is enough. If empty, the AI will make the link for you.">
+        <TI val={e.link} set={function(v){updExp(i,"link",v);}} ph="e.g., Serving foreign guests → directly useful for global guest service"/>
+      </F>
+    </div>
+  );
+}
+
+function S3({d, u, m, updExp, addExp, delExp}) {
+  var ex = exFor(d);
+  return (
+    <>
+      <SH eyebrow="STEP 03 · Experience — the heart of your resume" time="10–15 min — spend your time here"
+        title="Organize 'several' experiences with numbers"
+        sub="This fills the resume's '5. Experience ★' section. Work, internships, part-time jobs, clubs, contests, personal activities — anything counts. We recommend 2 or more. Only the organization and main tasks are required; fill the rest as much as you know."/>
+      {d.expList.map(function(e,i){
+        return <ExpCard key={i} e={e} i={i} d={d} m={m} updExp={updExp} delExp={delExp} canDel={d.expList.length>1}/>;
+      })}
+      {d.expList.length<6 && (
+        <button onClick={addExp}
+          style={{width:"100%",border:"1.5px dashed "+C.accent,background:C.accentBg,color:C.accent,borderRadius:12,padding:"13px",fontSize:13.5,fontWeight:800,cursor:"pointer",marginBottom:22}}>
+          + Add experience ({d.expList.length}/6)
+        </button>
+      )}
+      <div style={{borderTop:"1px dashed "+C.border,margin:"6px 0 18px"}}/>
+      <div style={{fontWeight:800,fontSize:14.5,color:C.ink,marginBottom:4}}>Key experience in depth — build your 'episode pillar'</div>
+      <p style={{color:C.muted,fontSize:12,lineHeight:1.6,margin:"0 0 14px"}}>From the experiences above, choose <b>the one episode you remember best</b> and write it in depth. This episode pillar is used in the self-introduction's 'Key Experience' question, and you can reuse it in interviews and your portfolio.</p>
+      <F label="Choose your key experience" req>
+        <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+          {d.expList.map(function(e,i){
+            var on = d.starIndex===i;
+            var lb = e.org ? ((i+1)+". "+(e.org.length>22?e.org.slice(0,22)+"…":e.org)) : ("Experience "+(i+1));
+            return (
+              <button key={i} onClick={function(){u("starIndex",i);}}
+                style={{border:"1.5px solid "+(on?C.accent:C.border),background:on?C.accent:"#fff",color:on?"#fff":C.muted,
+                  borderRadius:18,padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>{on?"★ ":""}{lb}</button>
+            );
+          })}
+        </div>
+      </F>
+      <F label="Situation · background — what was the scene?" req hint={"Think of one of these → ① a situation with a problem or inconvenience ② a very busy or difficult day ③ a guest or teammate you remember ④ something you wanted to change"}>
+        <TA rows={2} val={d.starSituation} set={function(v){u("starSituation",v);}} ph={ex.situation}/>
+      </F>
+      <F label="Action — what did you do, and how?" req hint={"It's easy if you split it into ①②③. e.g., ① I checked why the line got long → ② made a guide sheet and checklist → ③ guided waiting guests first. Write what YOU did, not 'the team'."}>
+        <TA rows={3} val={d.starAction} set={function(v){u("starAction",v);}} ph={ex.action}/>
+      </F>
+      <F label="Result — what changed because of your action?" req hint={"Number hints: XX% up/down / XX points (satisfaction 4.8) / S grade / XX won saved / XX minutes shorter. No numbers? Reactions and recognition are good results too — compliment cards, being hired again, an award, praise from the manager."}>
+        <TA rows={2} val={d.starResult} set={function(v){u("starResult",v);}} ph={ex.result}/>
+      </F>
+    </>
+  );
+}
+
+// ─────────────────────────── STEP 4 : Activities · strengths · values ───────────────────────────
+function S4({d, u, m}) {
+  var ex = exFor(d);
+  function toggleStrength(s){
+    var cur = d.expStrengths || [];
+    if(cur.indexOf(s)>=0) u("expStrengths", cur.filter(function(x){return x!==s;}));
+    else if(cur.length<5) u("expStrengths", cur.concat([s]));
+  }
+  return (
+    <>
+      <SH eyebrow="STEP 04 · Activities · strengths · values" time="5–10 min"
+        title="Material for 'Other Activities' and your self-introduction"
+        sub="The resume's '7. Other Activities' section and your self-introduction's motivation, differentiation and goals come from here. Only strengths, motivation and differentiation are required."/>
+      <div style={{fontWeight:800,fontSize:14.5,color:C.ink,marginBottom:4}}>Other activities <span style={{background:C.borderSoft,color:C.muted,fontSize:10.5,fontWeight:700,padding:"1px 8px",borderRadius:10,marginLeft:4,verticalAlign:"2px"}}>Fill only what applies</span></div>
+      <p style={{color:C.muted,fontSize:12,lineHeight:1.6,margin:"0 0 14px"}}>You do <b>not</b> need to fill all of these. Write only what you have, one per line, and skip a box completely if it doesn't apply. Add numbers (times, people, period) if you can.</p>
+      <Grid2 m={m}>
+        <F label="Training · presentations · programs" opt hint="Both ones you led and ones you completed.">
+          <TA rows={3} val={d.actTeach} set={function(v){u("actTeach",v);}} ph={"Job-readiness program for international students, completed (2026)\nPresented at a tourism club 3 times"}/>
+        </F>
+        <F label="Awards · evaluations · recognition" opt>
+          <TA rows={3} val={d.actAward} set={function(v){u("actAward",v);}} ph={"Regional tourism idea contest, award (2025)\nBest Service Staff of the Month, 1 time"}/>
+        </F>
+      </Grid2>
+      <Grid2 m={m}>
+        <F label="Writing · content · SNS" opt>
+          <TA rows={3} val={d.actContent} set={function(v){u("actContent",v);}} ph={"Korea travel blog in Vietnamese (80 posts)\nInstagram travel account, 1,200 followers"}/>
+        </F>
+        <F label="Volunteering · groups · routines · other" opt>
+          <TA rows={3} val={d.actEtc} set={function(v){u("actEtc",v);}} ph={"Interpreting volunteer at a tourist information center, 12 times\nKorean speaking study group, every day for 6 months"}/>
+        </F>
+      </Grid2>
+      <div style={{borderTop:"1px dashed "+C.border,margin:"8px 0 18px"}}/>
+      <F label="Your strength keywords (up to 5)" req hint="Choose the strengths that run through your experiences.">
+        {STRENGTH_GROUPS.map(function(grp){
+          return (
+            <div key={grp.g} style={{marginBottom:9}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.faint,marginBottom:5}}>{grp.g}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {grp.items.map(function(s){
+                  var on = (d.expStrengths||[]).indexOf(s)>=0;
+                  return (
+                    <button key={s} onClick={function(){toggleStrength(s);}}
+                      style={{border:"1.5px solid "+(on?C.accent:C.border),background:on?C.accentBg:"#fff",color:on?C.accent:C.muted,
+                        borderRadius:16,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{s}</button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </F>
+      <F label="Your unique appeal point" opt hint="One thing about you that the keywords can't hold. Skip it if nothing comes to mind.">
+        <TA rows={2} val={d.appealPoint} set={function(v){u("appealPoint",v);}} ph={ex.diff}/>
+      </F>
+      <div style={{borderTop:"1px dashed "+C.border,margin:"8px 0 18px"}}/>
+      <F label="Motivation — why this work?" req hint="For international students, a short link between you, Korea and this job is powerful. One or two sentences are enough.">
+        <TA rows={3} val={d.motivation} set={function(v){u("motivation",v);}} ph={ex.motivation}/>
+      </F>
+      <F label="What makes you different — one thing" req>
+        <TA rows={2} val={d.differentiator} set={function(v){u("differentiator",v);}} ph={ex.diff}/>
+      </F>
+      <Grid2 m={m}>
+        <F label="Your work principle" opt>
+          <TA rows={2} val={d.workValue} set={function(v){u("workValue",v);}} ph={ex.value}/>
+        </F>
+        <F label="What you want to do after joining" opt>
+          <TA rows={2} val={d.aspiration} set={function(v){u("aspiration",v);}} ph={ex.aspire}/>
+        </F>
+      </Grid2>
+      <F label="You in one word" opt>
+        <TI val={d.oneWord} set={function(v){u("oneWord",v);}} ph="e.g., Connector / Organizer / Bridge"/>
+      </F>
+    </>
+  );
+}
+
+// ─────────────────────────── STEP 5 : Done ───────────────────────────
+function PCard({num, ico, title, usage, tip, content, done, onCopy}) {
+  return (
+    <div style={{border:"1px solid "+C.border,borderRadius:14,overflow:"hidden",marginBottom:18,background:"#fff"}}>
+      <div style={{borderBottom:"1px solid "+C.border,padding:"15px 16px",display:"flex",alignItems:"flex-start",gap:12}}>
+        <div style={{background:C.accentBg,color:C.accent,width:38,height:38,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{ico}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{color:C.muted,fontWeight:700,fontSize:10,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:3}}>Prompt {num}</div>
+          <div style={{fontWeight:800,fontSize:15,color:C.ink,marginBottom:5,lineHeight:1.35}}>{title}</div>
+          <div style={{color:C.muted,fontSize:12.5,lineHeight:1.6}}>{usage}</div>
+        </div>
+      </div>
+      <div style={{background:C.canvas,padding:"14px 16px"}}>
+        <pre style={{fontSize:11,lineHeight:1.8,whiteSpace:"pre-wrap",wordBreak:"break-word",maxHeight:200,overflowY:"auto",margin:0,color:C.ink,fontFamily:"'SF Mono',ui-monospace,Menlo,monospace"}}>{content}</pre>
+      </div>
+      <div style={{padding:"12px 16px",borderTop:"1px solid "+C.borderSoft}}>
+        <button onClick={onCopy} style={{
+          width:"100%",background:done?C.good:C.accent,color:"#fff",border:"none",borderRadius:10,
+          padding:"13px",fontSize:14,fontWeight:800,cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+          boxShadow:done?"none":"0 3px 12px rgba(0,102,204,0.25)"
+        }}>
+          {done ? "✓ Copied! Paste it into Claude" : "📋 Copy prompt"}
+        </button>
+      </div>
+      {tip && (
+        <div style={{background:C.canvas,padding:"9px 16px",display:"flex",alignItems:"flex-start",gap:6,borderTop:"1px solid "+C.borderSoft}}>
+          <span style={{flexShrink:0,fontSize:12}}>💡</span>
+          <p style={{color:C.muted,fontSize:11.5,margin:0,lineHeight:1.6}}>{tip}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SummaryRow({label, val, ph}) {
+  var has = val && String(val).trim();
+  return (
+    <div style={{display:"flex",borderBottom:"1px solid "+C.border}}>
+      <div style={{width:110,flexShrink:0,background:C.canvas,padding:"12px 14px",fontWeight:700,fontSize:12.5,color:C.ink,borderRight:"1px solid "+C.border}}>{label}</div>
+      <div style={{flex:1,minWidth:0,padding:"12px 14px",fontSize:12.5,lineHeight:1.6,color:has?C.ink:C.faint,whiteSpace:"pre-wrap"}}>{has?val:ph}</div>
+    </div>
+  );
+}
+
+function Summary({d}) {
+  var expLines = d.expList
+    .map(function(e,i){
+      if(!(e.org||e.duty)) return null;
+      var star = d.starIndex===i ? "★ " : "";
+      return star + (i+1) + ". " + (e.org||"(organization not entered)") + (e.period?(" ("+e.period+")"):"") + (e.numbers?(" — "+e.numbers):"");
+    })
+    .filter(Boolean).join("\n");
+  return (
+    <div style={{border:"2px solid "+C.ink,borderRadius:16,overflow:"hidden",background:"#fff"}}>
+      <div style={{background:C.ink,padding:"16px 18px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4,flexWrap:"wrap"}}>
+          <span style={{background:C.kakao,color:C.ink,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:20}}>My Experience Assets</span>
+          <span style={{color:"rgba(255,255,255,0.5)",fontSize:11}}>Resume · Self-Intro · Portfolio Builder</span>
+        </div>
+        <div style={{color:"#fff",fontWeight:800,fontSize:18,letterSpacing:"-0.01em"}}>Experience assets {(d.name||"you")} organized today</div>
+        <div style={{color:"rgba(255,255,255,0.6)",fontSize:12,marginTop:4}}>Take a screenshot of this table — you can reuse it when applying to other companies</div>
+      </div>
+      <SummaryRow label="Target job" val={jobLabel(d)+(d.role?(" · "+d.role):"")} ph="Choose in STEP 1"/>
+      <SummaryRow label="Company" val={d.targetCompany} ph="Enter in STEP 1 (optional)"/>
+      <SummaryRow label="Korean level" val={d.koreanLevel} ph="Enter in STEP 2 (optional)"/>
+      <SummaryRow label="One word" val={d.oneWord} ph="Enter at the end of STEP 4"/>
+      <SummaryRow label="Strengths" val={(d.expStrengths&&d.expStrengths.join(", "))||d.appealPoint} ph="Choose in STEP 4"/>
+      <SummaryRow label="Experience" val={expLines} ph="Enter in STEP 3 (several)"/>
+      <SummaryRow label="Key action" val={d.starAction} ph="What you did in your key experience"/>
+      <SummaryRow label="Key result" val={d.starResult} ph="What changed, before → after"/>
+      <SummaryRow label="Motivation" val={d.motivation} ph="Enter in STEP 4"/>
+      <SummaryRow label="Difference" val={d.differentiator} ph="The one thing that makes you different"/>
+      <div style={{background:C.kakao,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:9}}>
+          <span style={{fontSize:22}}>💬</span>
+          <div>
+            <div style={{fontWeight:800,fontSize:13,color:"#1A1A1A"}}>Yosep AI Document Lab (요셉쌤 AI문서연구소)</div>
+            <div style={{fontSize:11.5,color:"#6B5B00"}}>Second-round clinic for your finished documents · Questions welcome</div>
+          </div>
+        </div>
+        <div style={{fontSize:11.5,fontWeight:700,color:"#1A1A1A"}}>open.kakao.com/me/yosepAI</div>
+      </div>
+    </div>
+  );
+}
+
+function S5({d, u, copied, onCopy, onReset}) {
+  var prompts = useMemo(function(){return buildPrompts(d);},[d]);
+  var pct = useMemo(function(){return completion(d);},[d]);
+  var FLOW = [
+    {n:"①", t:"Copy the Resume prompt → paste it into a Claude chat"},
+    {n:"②", t:"In the SAME chat, paste the Self-introduction prompt"},
+    {n:"③", t:"In the same chat, paste the Portfolio prompt"},
+    {n:"④", t:"Paste the Final Document prompt → a ready-to-submit English A4 set (Resume 1 page · Self-intro 1 page · Portfolio 2 pages) as an HTML file → upload your ID photo and field photos to the chat and they go into place"},
+    {n:"⑤", t:"Korean version — open a new chat, attach the final English HTML file and paste the Korean Version prompt → the same document in natural Korean"},
+  ];
+  return (
+    <>
+      <SH eyebrow="STEP 05 · Done" title="Your 5 personal prompts are ready"
+        sub="Use ①–④ in ONE chat, in order. Each result becomes material for the next prompt, and the final prompt builds the integrated document without any file attachment. Then ⑤ turns the English document into Korean. We recommend Claude — you can get the files directly."/>
+      <div style={{border:"1.5px solid "+C.ink,borderRadius:14,padding:"16px 18px",marginBottom:20,background:"#fff"}}>
+        <div style={{fontWeight:800,fontSize:13.5,color:C.ink,marginBottom:11}}>🗺️ How to use — in order</div>
+        {FLOW.map(function(f,i){
+          return (
+            <div key={i} style={{display:"flex",gap:9,alignItems:"flex-start",marginBottom:i<FLOW.length-1?8:0}}>
+              <span style={{color:C.accent,fontWeight:800,fontSize:13,flexShrink:0}}>{f.n}</span>
+              <span style={{fontSize:12.5,color:C.ink,lineHeight:1.6}}>{f.t}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{background:pct>=60?C.goodBg:C.warnBg,border:"1px solid "+(pct>=60?C.good:C.warn),borderRadius:10,padding:"11px 14px",marginBottom:22,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20,flexShrink:0}}>{pct>=60?"✅":"📝"}</span>
+        <div style={{fontSize:12.5,color:C.ink,lineHeight:1.5}}>
+          <strong>Input completeness {pct}%</strong> — {pct>=60?"Good enough. Use the prompts now.":"Filling the earlier steps a little more gives better results. The 'Numbers' box for each experience is especially important."}
+        </div>
+      </div>
+      {hasTarget(d)
+        ? <Notice ico="🏢" tone="good"><b>Tailored for {(d.targetCompany||"").trim() || "the target company"}</b> — the {[(d.targetPosting||"").trim()&&"job posting",(d.targetTalent||"").trim()&&"ideal candidate / company information"].filter(Boolean).join(" · ") || "company name"} you entered is in all the prompts. The resume adds a posting keyword map, the self-introduction an ideal-candidate link table, and the portfolio posting coverage and an ideal-candidate match.</Notice>
+        : <Notice ico="🏢"><b>These prompts are built for the job</b> — use them as they are, even without a company. When you choose a company later, select 'Yes' at the bottom of STEP 1, enter the posting and ideal candidate, and copy the prompts again — they will be tailored to that company.</Notice>}
+      {prompts.map(function(p,i){
+        return (
+          <React.Fragment key={p.id}>
+            {p.id==="p4" && (
+              <Notice ico="📎">
+                <b>How to use</b> — no template file needed. With the ① resume ② self-introduction ③ portfolio results in the same chat, just paste this prompt. The format (colors, fonts, margins, chart) is built into the prompt as a spec, so you get an A4 document ready to submit.
+              </Notice>
+            )}
+            {p.id==="p5" && (
+              <Notice ico="🇰🇷" tone="good">
+                <b>Korean version</b> — most Korean employers want Korean documents. After ④, open a <b>new chat</b>, attach the final English HTML file, and paste prompt ⑤. You will get the same design in natural Korean, plus an English back-translation of key sentences so you can check the meaning yourself.
+              </Notice>
+            )}
+            <PCard num={i+1} ico={p.ico} title={p.title} usage={p.usage} tip={p.tip} content={p.content}
+              done={copied===p.id} onCopy={function(){onCopy(p.content, p.id);}}/>
+          </React.Fragment>
+        );
+      })}
+      <div style={{margin:"26px 0 18px"}}><Summary d={d}/></div>
+      <button onClick={onReset}
+        style={{width:"100%",border:"1px solid "+C.border,background:"#fff",color:C.muted,borderRadius:10,padding:"12px",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>
+        🔄 Start over (clear all inputs)
+      </button>
+    </>
+  );
+}
+
+// Copy helper — Clipboard API first, then a fallback for file:// pages or older browsers
+function copyText(text){
+  function fallback(){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly",""); ta.style.position="fixed"; ta.style.top="-1000px";
+      document.body.appendChild(ta); ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){ return false; }
+  }
+  if(navigator.clipboard && window.isSecureContext){
+    return navigator.clipboard.writeText(text).then(function(){return true;}, function(){return fallback();});
+  }
+  return Promise.resolve(fallback());
+}
+
+// ─────────────────────────── App ───────────────────────────
+function App() {
+  var _s = useState(1); var step = _s[0]; var setStep = _s[1];
+  var _d = useState(INIT); var data = _d[0]; var setData = _d[1];
+  var _c = useState(null); var copied = _c[0]; var setCopied = _c[1];
+  var isMobile = useIsMobile();
+
+  var upd = useCallback(function(key, val){ setData(function(p){ var n={...p}; n[key]=val; return n; }); },[]);
+  var updExp = useCallback(function(i, key, val){
+    setData(function(p){
+      var list = p.expList.map(function(e,idx){ return idx===i ? {...e, [key]:val} : e; });
+      return {...p, expList:list};
+    });
+  },[]);
+  var addExp = useCallback(function(){
+    setData(function(p){ return p.expList.length>=6 ? p : {...p, expList:p.expList.concat([newExp()])}; });
+  },[]);
+  var delExp = useCallback(function(i){
+    setData(function(p){
+      if(p.expList.length<=1) return p;
+      var list = p.expList.filter(function(_,idx){return idx!==i;});
+      var star = p.starIndex;
+      if(star===i) star = 0;
+      else if(star>i) star = star-1;
+      return {...p, expList:list, starIndex:star};
+    });
+  },[]);
+  var reset = useCallback(function(){
+    if(window.confirm("All inputs will be cleared. Start over from the beginning?")){
+      setData({...INIT, expList:[newExp()]});
+      setCopied(null); setStep(1);
+    }
+  },[]);
+
+  useEffect(function(){ window.scrollTo({top:0,behavior:"smooth"}); },[step]);
+  function copyPrompt(text,id){
+    copyText(text).then(function(ok){
+      if(ok){ setCopied(id); setTimeout(function(){setCopied(null);},2200); }
+      else { window.alert("Copy failed in this browser. Click inside the prompt box, press Ctrl+A (Cmd+A on Mac) and Ctrl+C to copy it."); }
+    });
+  }
+
+  var pct = step/STEPS.length*100;
+
+  var Sidebar = (
+    <aside style={{position:"sticky",top:70,height:"fit-content",width:208,flexShrink:0}}>
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Step {step}/{STEPS.length}</div>
+      <ol style={{listStyle:"none",margin:0,padding:0}}>
+        {STEPS.map(function(s){
+          var active=s.id===step, done=s.id<step;
+          return (
+            <li key={s.id} style={{marginBottom:3}}>
+              <button onClick={function(){setStep(s.id);}}
+                style={{width:"100%",textAlign:"left",border:"none",borderRadius:9,padding:"9px 11px",display:"flex",alignItems:"flex-start",gap:9,cursor:"pointer",
+                  background:active?C.ink:"transparent",color:active?"#fff":done?C.ink:C.muted}}>
+                <div style={{width:22,height:22,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0,marginTop:1,
+                  background:active?"#fff":done?C.accent:C.borderSoft,color:active?C.ink:done?"#fff":C.muted}}>{done?"✓":s.id}</div>
+                <div>
+                  <div style={{fontWeight:600,fontSize:12.5,lineHeight:1.3}}>{s.label}</div>
+                  <div style={{fontSize:10.5,opacity:0.6,marginTop:2,lineHeight:1.3}}>{s.sub}</div>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </aside>
+  );
+
+  var MobileStepBar = (
+    <div style={{background:C.panel,borderBottom:"1px solid "+C.border,padding:"10px 0 0"}}>
+      <div className="step-scroll" style={{padding:"0 16px 10px",display:"flex",gap:7}}>
+        {STEPS.map(function(s){
+          var active=s.id===step, done=s.id<step;
+          return (
+            <button key={s.id} onClick={function(){setStep(s.id);}}
+              style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,border:"none",borderRadius:20,padding:"6px 13px",cursor:"pointer",
+                background:active?C.ink:done?C.accentBg:C.borderSoft,color:active?"#fff":done?C.accent:C.muted,
+                fontSize:11.5,fontWeight:700,whiteSpace:"nowrap",boxShadow:active?"0 2px 8px rgba(0,0,0,0.15)":"none"}}>
+              <span style={{width:18,height:18,borderRadius:"50%",background:active?"rgba(255,255,255,0.2)":done?C.accent:"rgba(0,0,0,0.08)",color:active?"#fff":done?"#fff":C.muted,
+                display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,flexShrink:0}}>{done?"✓":s.id}</span>
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{height:3,background:C.borderSoft}}><div style={{width:pct+"%",height:"100%",background:C.accent,transition:"width 0.4s ease"}}/></div>
+    </div>
+  );
+
+  return (
+    <div style={{background:C.canvas,minHeight:"100vh",color:C.ink}}>
+      <header style={{borderBottom:"1px solid "+C.border,background:C.panel,position:"sticky",top:0,zIndex:50}}>
+        <div style={{maxWidth:1100,margin:"0 auto",padding:isMobile?"11px 16px":"13px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+            <div style={{background:C.ink,width:34,height:34,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>✨</div>
+            <div style={{minWidth:0}}>
+              <div style={{fontWeight:800,fontSize:isMobile?13:14.5,letterSpacing:"-0.01em",lineHeight:1.2}}>Resume · Self-Intro · Portfolio Prompt Maker</div>
+              {!isMobile && <div style={{color:C.muted,fontSize:11,marginTop:1}}>For international students in Korea — answer the questions, get English documents, then a Korean version</div>}
+            </div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+            <span style={{color:C.accent,fontWeight:800,fontSize:13}}>{step}</span>
+            <span style={{color:C.faint,fontSize:12}}>/ {STEPS.length}</span>
+            <span style={{color:C.muted,fontSize:11,marginLeft:4,display:isMobile?"none":"inline"}}>{STEPS[step-1].label}</span>
+          </div>
+        </div>
+        {!isMobile && <div style={{height:3,background:C.borderSoft}}><div style={{width:pct+"%",height:"100%",background:C.accent,transition:"width 0.4s ease"}}/></div>}
+      </header>
+
+      {isMobile && MobileStepBar}
+
+      <div style={{maxWidth:1100,margin:"0 auto",padding:isMobile?"16px 12px":"26px 22px",display:isMobile?"block":"flex",gap:24,alignItems:"flex-start"}}>
+        {!isMobile && Sidebar}
+        <main style={{flex:1,minWidth:0}}>
+          <div style={{background:C.panel,border:"1px solid "+C.border,borderRadius:isMobile?14:18,padding:isMobile?"20px 16px":34}}>
+            {step===1 && <S1 d={data} u={upd} m={isMobile}/>}
+            {step===2 && <S2 d={data} u={upd} m={isMobile}/>}
+            {step===3 && <S3 d={data} u={upd} m={isMobile} updExp={updExp} addExp={addExp} delExp={delExp}/>}
+            {step===4 && <S4 d={data} u={upd} m={isMobile}/>}
+            {step===5 && <S5 d={data} u={upd} copied={copied} onCopy={copyPrompt} onReset={reset}/>}
+            <div style={{borderTop:"1px solid "+C.border,marginTop:28,paddingTop:16,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <button onClick={function(){setStep(function(s){return Math.max(1,s-1);});}} disabled={step===1}
+                style={{border:"1px solid "+C.border,background:"transparent",color:step===1?C.faint:C.ink,borderRadius:8,padding:isMobile?"10px 16px":"9px 18px",fontSize:13,fontWeight:600,cursor:step===1?"not-allowed":"pointer"}}>← Back</button>
+              <span style={{color:C.faint,fontSize:12}}>{step} / {STEPS.length}</span>
+              {step<STEPS.length
+                ? <button onClick={function(){setStep(function(s){return Math.min(STEPS.length,s+1);});}}
+                    style={{background:C.ink,color:"#fff",border:"none",borderRadius:8,padding:isMobile?"10px 18px":"9px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Next →</button>
+                : <span style={{fontSize:12.5,color:C.good,fontWeight:700}}>✨ Done!</span>}
+            </div>
+          </div>
+          <footer style={{textAlign:"center",padding:"22px 0 30px",color:C.faint,fontSize:11.5,lineHeight:1.7}}>
+            Yosep AI Document Lab (요셉쌤 AI문서연구소) · Resume · Self-Intro · Portfolio Prompt Maker — English Edition<br/>
+            Contact : <a href={KAKAO} target="_blank" rel="noopener" style={{color:C.accent,fontWeight:600,textDecoration:"none"}}>KakaoTalk Open Chat</a>
+            <span style={{margin:"0 6px",color:C.faint}}>｜</span>
+            <a href="https://hongyosep-profile.vercel.app/" target="_blank" rel="noopener" style={{color:C.accent,fontWeight:600,textDecoration:"none"}}>Instructor Yosep Hong — Official Website</a>
+          </footer>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
